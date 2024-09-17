@@ -14,7 +14,7 @@
 
 - R0: Defines the desired distance from the core at which point ECS turns on. Note internally R0 will be rounded to the nearest value in knot vector. 
 
--eta: Defines the phase with which to rotate the grid for ECS.
+- eta: Defines the phase with which to rotate the grid for ECS.
 
 ## species:
 
@@ -72,7 +72,7 @@ nonzero = 1 and ell > 0:
 Circular or elliptical polarization in plane with input axis defaulting to major
 
 nonzero = 1 and ell = 0:
-Linaer polarization along input axis
+Linear polarization along input axis
 
 ## TDSE:
 
