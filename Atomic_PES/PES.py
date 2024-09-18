@@ -233,6 +233,7 @@ class PES:
             for l in range(lmax+1):
                 self.cont_states[(E,l)] = waves[l]
                 self.phases[(E,l)] = phases[l]
+            del waves,phases
             if i % 100 == 0 and i != 0:
                 gc.collect()
 
