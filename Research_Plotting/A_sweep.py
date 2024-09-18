@@ -37,8 +37,7 @@ theta = np.pi / 2  # Fixed theta = pi/2
 phi_range = np.arange(0, 2 * np.pi, 0.01)  # Range of phi values
 
 # Energy to compute and fit asymmetry at
-E_target = 0.54 # The target energy
-
+E_target = 0.484 # The target energy
 
 # Find the closest energy index to E_target
 E_idx = np.argmin(np.abs(E_range - E_target))
