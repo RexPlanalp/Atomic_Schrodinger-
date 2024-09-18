@@ -134,6 +134,7 @@ if "TOTAL" in sys.argv:
     plt.clf()
 
     plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr",vmin = -1,vmax = 1)
+    plt.xlim([0,0.8])
     plt.colorbar()
     plt.savefig("images/A_rect.png")
 
