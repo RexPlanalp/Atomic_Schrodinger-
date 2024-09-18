@@ -7,6 +7,7 @@ import time
 import os
 import pickle
 import json
+import gc
 
 from numpy import exp
 from numpy import sqrt
@@ -218,12 +219,14 @@ class PES:
         lmax = self.parameters["lm"]["lmax"]
 
        
-        for E in self.E_range:
+        for i,E in enumerate(self.E_range):
             print(E)
             for l in range(lmax+1):
                 phase, coul_wave = self.Shooting_Method_faster(l, E)
                 self.cont_states[(E,l)] = coul_wave
                 self.phases[(E,l)] = phase
+            if i % 100 == 0 and i != 0:
+                gc.collect()
 
         with open('PES_files/phases.pkl', 'wb') as pickle_file:
             pickle.dump(self.phases, pickle_file)

@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import gc
 
 from petsc4py import PETSc
 rank = PETSc.COMM_WORLD.rank
@@ -47,6 +48,8 @@ if rank == 0:
     init_end = time.time()
     print(f"Expanding Wavefunction In Position Space Finished in {round(init_end - init_start, 2)} seconds")
     print("\n")
+
+gc.collect()
 
 if rank == 0:
     init_start = time.time()
