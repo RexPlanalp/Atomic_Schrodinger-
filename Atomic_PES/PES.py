@@ -138,43 +138,51 @@ class PES:
             # Update the block in psi_final_bspline with the modified wavefunction
             self.final_state_cont[block_idx * n_basis:(block_idx + 1) * n_basis] = wavefunction_block
 
-    def Shooting_Method_faster(self,l, E):
-        r_range2 = self.r_range**2
+    def compute_coulomb_waves_and_phases(self,E):
+        r_range2 = self.r_range ** 2
         dr = self.r_range[1] - self.r_range[0]
         dr2 = dr * dr
-        
-        l_term = l * (l + 1)
-        k = np.sqrt(2 * E)
-        potential = np.empty_like(self.r_range)
-        potential[0] = np.inf  # Set the potential at r=0 to a high value to avoid division by zero.
 
+        lmax = self.parameters["lm"]["lmax"]
+        # Assuming l values range from 0 to lmax
+        l_values = np.arange(0, lmax + 1)
+        l_term = l_values * (l_values + 1)  # Shape (num_l,)
+        k = np.sqrt(2 * E)
+
+        # Prepare potential array, replicate for each l
+        potential = np.empty_like(self.r_range)
+        potential[0] = np.inf  # Set the potential at r=0 to avoid division by zero.
         potential[1:] = self.pot_func(self.r_range[1:])
 
-        
-            
+        # Vectorize potential to shape (num_l, len(r_range))
+        potential = np.broadcast_to(potential, (l_values.size, self.r_range.size))
 
-        coul_wave = np.zeros_like(self.r_range)
-        coul_wave[0] = 1.0
-        # Adjust initialization for the second point if r_range starts from 0
-        coul_wave[1] = coul_wave[0] * (dr2 * (l_term / r_range2[1] + 2 * potential[1] + 2 * E) + 2)
+        # Initialize Coulomb wave array for all l values
+        coul_wave = np.zeros((l_values.size, self.r_range.size))
+        coul_wave[:, 0] = 1.0  # Initialize first point for all l values
 
-        # Compute wave function values
+        # Adjust initialization for the second point
+        coul_wave[:, 1] = coul_wave[:, 0] * (dr2 * (l_term / r_range2[1] + 2 * potential[:, 1] + 2 * E) + 2)
+
+        # Compute wave function values in a vectorized manner
         for idx in range(2, len(self.r_range)):
-            term = dr2 * (l_term / r_range2[idx-1] + 2 * potential[idx-1] - 2 * E)
-            coul_wave[idx] = coul_wave[idx-1] * (term + 2) - coul_wave[idx-2]
+            term = dr2 * (l_term / r_range2[idx - 1] + 2 * potential[:, idx - 1] - 2 * E)
+            coul_wave[:, idx] = coul_wave[:, idx - 1] * (term + 2) - coul_wave[:, idx - 2]
 
         # Final values and phase computation
         r_val = self.r_range[-2]
-        coul_wave_r = coul_wave[-2]
-        dcoul_wave_r = (coul_wave[-1] - coul_wave[-3]) / (2 * dr)
-        
-        norm = np.sqrt(np.abs(coul_wave_r)**2 + (np.abs(dcoul_wave_r) / (k + 1 / (k * r_val)))**2)
-        phase = np.angle((1.j * coul_wave_r + dcoul_wave_r / (k + 1 / (k * r_val))) /
-                        (2 * k * r_val)**(1.j * 1 / k)) - k * r_val + l * np.pi / 2
+        coul_wave_r = coul_wave[:, -2]
+        dcoul_wave_r = (coul_wave[:, -1] - coul_wave[:, -3]) / (2 * dr)
 
-        coul_wave /= norm
+        norm = np.sqrt(np.abs(coul_wave_r) ** 2 + (np.abs(dcoul_wave_r) / (k + 1 / (k * r_val))) ** 2)
+        phase = np.angle((1.j * coul_wave_r + dcoul_wave_r / (k + 1 / (k * r_val))) /
+                        (2 * k * r_val) ** (1.j / k)) - k * r_val + l_values * np.pi / 2
+
+        # Normalize Coulomb wave functions
+        coul_wave /= norm[:, np.newaxis]
+
         return phase, coul_wave
-    
+
     def load_final_state(self):
         with h5py.File('TDSE_files/TDSE.h5', 'r') as f:
             tdse_data = f["psi_final"][:]
@@ -221,10 +229,10 @@ class PES:
        
         for i,E in enumerate(self.E_range):
             print(E)
+            phases,waves = self.compute_coulomb_waves_and_phases(E)
             for l in range(lmax+1):
-                phase, coul_wave = self.Shooting_Method_faster(l, E)
-                self.cont_states[(E,l)] = coul_wave
-                self.phases[(E,l)] = phase
+                self.cont_states[(E,l)] = waves[l]
+                self.phases[(E,l)] = phases[l]
             if i % 100 == 0 and i != 0:
                 gc.collect()
 
