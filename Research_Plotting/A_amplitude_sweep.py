@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.special import sph_harm
 from scipy.optimize import least_squares
+import sys
 
 # Load partial spectra and phases from simulation data
 with open('PES_files/partial_spectra.pkl', 'rb') as file:
@@ -35,7 +36,7 @@ theta = np.pi / 2  # Fixed theta = pi/2
 phi_range = np.arange(0, 2 * np.pi, 0.01)  # Range of phi values
 
 # Energy to compute and fit asymmetry at
-E_target = 0.48  # The target energy
+E_target = float(sys.argv[1])  # The target energy
 
 # Find the closest energy index to E_target
 E_idx = np.argmin(np.abs(E_range - E_target))
@@ -203,7 +204,7 @@ plt.scatter(
 )
 plt.xlabel('l, m values')
 plt.ylabel('Ratio')
-plt.title(f'Comparison of Ratios')
+plt.title(f'Comparison of Ratios at E = {E} a.u.')
 plt.legend()
 
 plt.tight_layout()
