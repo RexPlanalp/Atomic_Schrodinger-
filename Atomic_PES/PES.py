@@ -56,13 +56,12 @@ class PES:
             self.pot_func = Ar
 
         rmax = self.parameters["box"]["grid_size"]
-        #dr = self.parameters["box"]["grid_spacing"]
-        dr = 0.01
+        dr = self.parameters["box"]["grid_spacing"]
         self.r_range = np.arange(0, rmax+dr, dr)
         self.Nr = len(self.r_range)
 
         dE,Emax = self.parameters["E"]
-        self.E_range = np.arange(dE, Emax+dE, dE)
+        self.E_range = np.round(np.arange(dE, Emax+dE, dE),decimals=3)
         
     def get(self, key, default=None):
         return self.parameters.get(key, default)
