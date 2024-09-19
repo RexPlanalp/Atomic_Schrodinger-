@@ -14,6 +14,6 @@ REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/Research_Plotting"
 hostname
 pwd
 
-mpiexec -n $SLURM_NTASKS python $REPO_DIR/A_amplitude_sweep.py >> results.log
+mpiexec -n $SLURM_NTASKS python $REPO_DIR/A_amplitude_sweep.py $1 >> results.log
 
 

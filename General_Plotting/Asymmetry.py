@@ -114,20 +114,15 @@ if "TOTAL" in sys.argv:
     for key,value in PAD_dict.items():
         E,theta,phi = key
         pad_val = value
+        opposite_phi = phi_range[np.argmin(np.abs(((phi+np.pi) % (2*np.pi))-phi_range))]
 
-        target_opposite_phi = (phi+np.pi) % (2*np.pi)
-        diff = np.abs(target_opposite_phi-phi_range)
-        real_index = np.argmin(diff)
-        real_opposite_phi = phi_range[real_index]
-
-        pad_val_opposite = PAD_dict[(E,theta,real_opposite_phi)]
+        pad_val_opposite = PAD_dict[(E,theta,opposite_phi)]
         A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
         asymmetry_vals.append(A)
 
     asymmetry_vals = np.array(asymmetry_vals)
-    asymmetry_momentum = asymmetry_vals/np.sqrt(2*E_vals)
-
-    plt.scatter(kx_vals, ky_vals, c=asymmetry_momentum, cmap="bwr", vmin=-1, vmax=1)
+   
+    plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr", vmin=-1, vmax=1)
     plt.colorbar()
     plt.savefig("images/A.png")
 
@@ -139,10 +134,5 @@ if "TOTAL" in sys.argv:
     plt.savefig("images/A_rect.png")
 
     plt.clf()
-
-
-#############################################################################################################
-#############################################################################################################
-
 
 
