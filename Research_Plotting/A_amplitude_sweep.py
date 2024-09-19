@@ -43,13 +43,20 @@ E_idx = np.argmin(np.abs(E_range - E_target))
 k = k_range[E_idx]  # The corresponding momentum value
 E = E_range[E_idx]  # The corresponding energy value
 
-# Use findPhotons to compute channel closings and predict l,m values to use for fit
-n = findPhotons(E)
-max_search = int(np.round(np.max(n)) + 1)
-min_search = int(np.round(np.max(n)) - 4)
-lm_vals = [(i, i) for i in range(min_search, max_search + 1)]
+######
+# Commented out for now, will be used later, trying for more lm pairs than just small subset
+######
+lmax = 50
+lm_vals = [(i,i) for i in range(lmax+1)]
 lm_vals.reverse()
-print(f"Fitting for lm_vals = {lm_vals}")
+
+# Use findPhotons to compute channel closings and predict l,m values to use for fit
+# n = findPhotons(E)
+# max_search = int(np.round(np.max(n)) + 1)
+# min_search = int(np.round(np.max(n)) - 4)
+# lm_vals = [(i, i) for i in range(min_search, max_search + 1)]
+# lm_vals.reverse()
+# print(f"Fitting for lm_vals = {lm_vals}")
 
 # Initialize lists for asymmetry values from simulation
 A_vals = []
@@ -145,7 +152,7 @@ def asymmetry_model_least_squares(params, phi_vals, A_vals):
     return A_model - A_vals
 
 # Define the number of fits to perform
-num_fits = 150
+num_fits = 1
 
 # Best result tracker
 best_result = None
