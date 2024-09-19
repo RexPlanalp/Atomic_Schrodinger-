@@ -219,28 +219,6 @@ class PES:
         
             self.final_state_cont_pos[start_idx:end_idx] = wavefunction
 
-    # def compute_continuum_states(self):
-    #     self.cont_states = {}
-    #     self.phases = {}
-
-    #     lmax = self.parameters["lm"]["lmax"]
-
-       
-    #     for i,E in enumerate(self.E_range):
-    #         print(E)
-    #         phases,waves = self.compute_coulomb_waves_and_phases(E)
-    #         for l in range(lmax+1):
-    #             self.cont_states[(E,l)] = waves[l]
-    #             self.phases[(E,l)] = phases[l]
-    #         del waves,phases
-    #         if i % 100 == 0 and i != 0:
-    #             gc.collect()
-
-    #     with open('PES_files/phases.pkl', 'wb') as pickle_file:
-    #         pickle.dump(self.phases, pickle_file)
-
-    
-
     def compute_partial_spectra(self):
         self.partial_spectra = {}
         self.phases = {}
@@ -250,6 +228,7 @@ class PES:
             self.partial_spectra[(l, m)] = []
 
         for E in self.E_range:
+            print(E)
             phases, waves = self.compute_coulomb_waves_and_phases(E)
             for (l, m), block_idx in self.lm_dict.items():
                 block = self.final_state_cont_pos[block_idx * self.Nr:(block_idx + 1) * self.Nr]
