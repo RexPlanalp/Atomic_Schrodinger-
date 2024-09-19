@@ -53,16 +53,6 @@ gc.collect()
 
 if rank == 0:
     init_start = time.time()
-    print("Computing Continuum States")
-    print("\n")
-PESInstance.compute_continuum_states()
-if rank == 0:
-    init_end = time.time()
-    print(f"Computing Continuum States Finished in {round(init_end - init_start, 2)} seconds")
-    print("\n")
-
-if rank == 0:
-    init_start = time.time()
     print("Computing Partial Spectra")
     print("\n")
 PESInstance.compute_partial_spectra()

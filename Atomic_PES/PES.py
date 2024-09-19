@@ -219,45 +219,53 @@ class PES:
         
             self.final_state_cont_pos[start_idx:end_idx] = wavefunction
 
-    def compute_continuum_states(self):
-        self.cont_states = {}
-        self.phases = {}
+    # def compute_continuum_states(self):
+    #     self.cont_states = {}
+    #     self.phases = {}
 
-        lmax = self.parameters["lm"]["lmax"]
+    #     lmax = self.parameters["lm"]["lmax"]
 
        
-        for i,E in enumerate(self.E_range):
-            print(E)
-            phases,waves = self.compute_coulomb_waves_and_phases(E)
-            for l in range(lmax+1):
-                self.cont_states[(E,l)] = waves[l]
-                self.phases[(E,l)] = phases[l]
-            del waves,phases
-            if i % 100 == 0 and i != 0:
-                gc.collect()
+    #     for i,E in enumerate(self.E_range):
+    #         print(E)
+    #         phases,waves = self.compute_coulomb_waves_and_phases(E)
+    #         for l in range(lmax+1):
+    #             self.cont_states[(E,l)] = waves[l]
+    #             self.phases[(E,l)] = phases[l]
+    #         del waves,phases
+    #         if i % 100 == 0 and i != 0:
+    #             gc.collect()
 
-        with open('PES_files/phases.pkl', 'wb') as pickle_file:
-            pickle.dump(self.phases, pickle_file)
+    #     with open('PES_files/phases.pkl', 'wb') as pickle_file:
+    #         pickle.dump(self.phases, pickle_file)
+
+    
 
     def compute_partial_spectra(self):
         self.partial_spectra = {}
+        self.phases = {}
 
-        for (l,m),block_idx in self.lm_dict.items():
-            spectra = []
-            for E in self.E_range:
-                
-                block = self.final_state_cont_pos[block_idx*self.Nr:(block_idx+1)*self.Nr]
+        # Initialize the partial spectra dictionary for each (l, m)
+        for (l, m) in self.lm_dict.keys():
+            self.partial_spectra[(l, m)] = []
 
-
-                y = np.array(self.cont_states[(E,l)].conj()) * (block)
-
+        for E in self.E_range:
+            phases, waves = self.compute_coulomb_waves_and_phases(E)
+            for (l, m), block_idx in self.lm_dict.items():
+                block = self.final_state_cont_pos[block_idx * self.Nr:(block_idx + 1) * self.Nr]
+                y = waves[l].conj() * block
                 inner_product = simps(y, self.r_range)
-                spectra.append(inner_product)
-            self.partial_spectra[(l, m)] = spectra
-
+                # Append the inner product to the list for each (l, m)
+                self.partial_spectra[(l, m)].append(inner_product)
+                if (E, l) not in self.phases:
+                    self.phases[(E, l)] = phases[l]
+            # Delete waves and phases to free up memory
+            del waves, phases
 
         with open('PES_files/partial_spectra.pkl', 'wb') as pickle_file:
             pickle.dump(self.partial_spectra, pickle_file)
+        with open('PES_files/phases.pkl', 'wb') as pickle_file:
+            pickle.dump(self.phases, pickle_file)
 
     def compute_angle_integrated(self):
         PES = 0
