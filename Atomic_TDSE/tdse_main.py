@@ -5,6 +5,9 @@ import sys
 from petsc4py import PETSc
 rank = PETSc.COMM_WORLD.rank
 
+import petsc4py
+petsc4py.init(sys.argv)
+
 from TDSE import Tdse
 from Laser import laser
 sys.path.append('/users/becker/dopl4670/Research/Atomic_Schrodinger/Common')
