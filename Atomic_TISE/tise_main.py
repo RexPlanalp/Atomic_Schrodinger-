@@ -5,6 +5,9 @@ import sys
 from petsc4py import PETSc
 rank = PETSc.COMM_WORLD.rank
 
+import petsc4py
+petsc4py.init(sys.argv)
+
 from TISE import Tise
 sys.path.append('/users/becker/dopl4670/Research/Atomic_Schrodinger/Common')
 from Basis import basis

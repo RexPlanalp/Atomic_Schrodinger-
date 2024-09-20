@@ -5,7 +5,7 @@
 #SBATCH --ntasks 1
 #SBATCH --mem=128G
 #SBATCH -o run.log 
-#SBATCH -t 0-08:00:00
+#SBATCH -t 1-00:00:00
 
 
 REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/Research_Plotting"
