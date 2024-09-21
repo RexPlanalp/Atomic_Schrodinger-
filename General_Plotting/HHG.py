@@ -13,6 +13,7 @@ polarization = input_data["lasers"]["polarization"]
 
 I_max = input_data["lasers"]["I"]/3.51E16
 w = input_data["lasers"]["w"]
+N = input_data["box"]["N"]
 
 if input_data["species"] == "H":
     Ip = -0.5
@@ -68,9 +69,9 @@ total_power_spectrum = total_power_spectrum[positive_freq_idx]
 
 # Plot the total harmonic spectrum
 plt.figure(figsize=(8, 6))
-plt.semilogy(frequencies, total_power_spectrum, color='b')
-plt.axvline(cut_off, color='r', linestyle='--', label='Cut-off Energy')
-plt.xlim([0, 0.6])        # Adjust based on your data's frequency range
+plt.semilogy(frequencies * N / w, total_power_spectrum, color='b')
+plt.axvline(cut_off/w, color='r', linestyle='--', label='Cut-off Energy')
+plt.xlim([0, 60])        # Adjust based on your data's frequency range
 plt.ylim([1e-4, 1e4])     # Adjust based on the power spectrum's range
 plt.xlabel('Frequency (atomic units)')
 plt.ylabel('Intensity (arb. units)')
