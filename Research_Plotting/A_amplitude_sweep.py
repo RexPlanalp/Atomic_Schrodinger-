@@ -152,7 +152,7 @@ def asymmetry_model_least_squares(params, phi_vals, A_vals):
     return A_model - A_vals
 
 # Define the number of fits to perform
-num_fits = 1
+num_fits = 100
 
 # Best result tracker
 best_result = None
