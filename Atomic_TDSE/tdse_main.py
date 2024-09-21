@@ -53,6 +53,7 @@ if rank == 0:
     print("\n")
 TDSEInstance.readInState()
 TDSEInstance.constructInteraction(basisInstance)
+TDSEInstance.constructHHG(basisInstance)
 TDSEInstance.constructAtomic()
 TDSEInstance.propagateState(laserInstance)
 if rank == 0:
