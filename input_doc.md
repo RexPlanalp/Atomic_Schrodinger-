@@ -88,5 +88,5 @@ Linear polarization along input axis
 
 ## HHG:
 
-- HHG: Not currently implemented
+- HHG: Defines whether HHG data will be computed at runtime of TDSE
 
