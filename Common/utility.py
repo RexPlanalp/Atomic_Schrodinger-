@@ -9,26 +9,28 @@ comm = PETSc.COMM_WORLD
 rank = comm.rank
 
 
-def lm_expansion(lmax,state,polarization):
-    delta_l = [1,-1]
+def lm_expansion(lmax, state, polarization):
+    delta_l = [1, -1]
     delta_m = []
     if polarization[0] or polarization[1]:
-        delta_m.append(1)
-        delta_m.append(-1)
+        delta_m.extend([1, -1])
     if polarization[2]:
         delta_m.append(0)
 
     def is_valid(l, m):
         return 0 <= l <= lmax and -l <= m <= l
 
-    queue = deque([(0, 0)])
-    reachable_points = set([(0, 0)])
+    # Extract initial l and m from state
+    initial_l, initial_m = state[1], state[2]
+
+    # Initialize the queue and reachable_points with the initial state
+    queue = deque([(initial_l, initial_m)])
+    reachable_points = set([(initial_l, initial_m)])
     index_to_point = {}
     point_to_index = {}
     index = 0
 
     # Add initial state to dictionaries
-    initial_l, initial_m = state[1], state[2]
     index_to_point[index] = (initial_l, initial_m)
     point_to_index[(initial_l, initial_m)] = index
     index += 1
@@ -42,7 +44,6 @@ def lm_expansion(lmax,state,polarization):
                 if is_valid(new_l, new_m) and (new_l, new_m) not in reachable_points:
                     reachable_points.add((new_l, new_m))
                     queue.append((new_l, new_m))
-                    
                     # Add to dictionaries
                     index_to_point[index] = (new_l, new_m)
                     point_to_index[(new_l, new_m)] = index
