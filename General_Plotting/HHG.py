@@ -1,60 +1,68 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import json
+
+# Path to your JSON file
+file_path = "input.json"
+
+# Open and load the JSON file
+with open(file_path, 'r') as file:
+    input_data = json.load(file)
+
+polarization = input_data["lasers"]["polarization"]
 
 # Load data
-HHG_data = np.real(np.load("TDSE_files/HHG_data.npy"))
-laser_data = np.real(np.load("TDSE_files/laser_data.npy"))
-total_time = np.real(np.load("TDSE_files/t_total.npy"))
+HHG_data = np.real(np.load("TDSE_files/HHG_data.npy"))      # Shape: (3, N)
+laser_data = np.real(np.load("TDSE_files/laser_data.npy"))  # Shape: (3, N)
+total_time = np.real(np.load("TDSE_files/t_total.npy"))     # Shape: (N,)
 
+# Initialize dipole_acceleration as a 2D array to store each component
+dipole_acceleration = np.zeros((3, len(total_time)))
 
-# Calculate dipole acceleration
-dipole_acceleration = -HHG_data[2,:] + np.gradient(laser_data[2,:], total_time)
+# Calculate dipole acceleration for each component
+for i in range(3):
+    dipole_acceleration[i, :] = -HHG_data[i, :] + np.gradient(laser_data[i, :], total_time)
 
-# Plot the harmonic spectrum
+# Plot the dipole acceleration components (optional)
 plt.figure(figsize=(8, 6))
-plt.plot(total_time,dipole_acceleration)
+for i in range(3):
+    plt.plot(total_time, dipole_acceleration[i, :], label=f'Component {i+1}')
+plt.xlabel('Time (a.u.)')
+plt.ylabel('Dipole Acceleration (a.u.)')
+plt.title('Dipole Acceleration Components')
+plt.legend()
 plt.savefig("images/dipole_accel.png")
 plt.clf()
 
-# Apply a window function (Blackman window to reduce spectral leakage)
-window = np.blackman(len(dipole_acceleration))
-windowed_dipole = dipole_acceleration * window
+# Apply a window function (Blackman window) to each component
+window = np.blackman(len(total_time))
+windowed_dipole = dipole_acceleration * window  # Broadcasting applies the window to each row
 
-# Perform FFT
-dipole_fft = np.fft.fft(windowed_dipole)
-frequencies = np.fft.fftfreq(len(dipole_acceleration), d=total_time[1] - total_time[0])
+# Perform FFT on each component
+dipole_fft = np.fft.fft(windowed_dipole, axis=1)
+frequencies = np.fft.fftfreq(len(total_time), d=total_time[1] - total_time[0])
 
-# Compute the power spectrum (magnitude squared of FFT)
+# Compute the power spectrum (magnitude squared of FFT) for each component
 power_spectrum = np.abs(dipole_fft)**2
 
-# Only keep the positive frequencies
-positive_freq_idx = np.where(frequencies > 0)
-frequencies = frequencies[positive_freq_idx]
-power_spectrum = power_spectrum[positive_freq_idx]
-
-# Apply a window function (Blackman window to reduce spectral leakage)
-window = np.blackman(len(dipole_acceleration))
-windowed_dipole = dipole_acceleration * window
-
-# Perform FFT
-dipole_fft = np.fft.fft(windowed_dipole)
-frequencies = np.fft.fftfreq(len(dipole_acceleration), d=total_time[1] - total_time[0])
-
-# Compute the power spectrum (magnitude squared of FFT)
-power_spectrum = np.abs(dipole_fft)**2
+# Sum the power spectra of all components to get the total power spectrum
+total_power_spectrum = np.sum(power_spectrum, axis=0)
 
 # Only keep the positive frequencies
-positive_freq_idx = np.where(frequencies > 0)
+positive_freq_idx = frequencies > 0
 frequencies = frequencies[positive_freq_idx]
-power_spectrum = power_spectrum[positive_freq_idx]
+total_power_spectrum = total_power_spectrum[positive_freq_idx]
 
-# Plot the harmonic spectrum
+# Plot the total harmonic spectrum
 plt.figure(figsize=(8, 6))
-plt.semilogy(frequencies, power_spectrum)
-plt.xlim([0,0.6])
-plt.ylim([1e-4,1e4])
+plt.semilogy(frequencies, total_power_spectrum, color='b')
+plt.xlim([0, 0.6])        # Adjust based on your data's frequency range
+plt.ylim([1e-4, 1e4])     # Adjust based on the power spectrum's range
 plt.xlabel('Frequency (atomic units)')
 plt.ylabel('Intensity (arb. units)')
 plt.title('Harmonic Spectrum')
+plt.grid(True, which='both', ls='--', lw=0.5)
 plt.savefig("images/harmonic_spectrum.png")
+plt.clf()
 
+print("Dipole acceleration components and harmonic spectrum have been successfully processed and saved.")

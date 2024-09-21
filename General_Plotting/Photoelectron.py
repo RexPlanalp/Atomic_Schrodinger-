@@ -2,6 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from scipy.signal import find_peaks
+import json
+
+
+file_path = "input.json"
+
+# Open and load the JSON file
+with open(file_path, 'r') as file:
+    input_data = json.load(file)
+
+SLICE = input_data["SLICE"]
+
 
 def findPeakIndices(PES):
     peak_indices = find_peaks(PES,width = 2)[0]
@@ -60,13 +71,20 @@ kz_vals = k_vals * np.cos(theta_vals)
 max = np.max(np.real(pad_vals))
 min = np.max(np.real(pad_vals))*10**-2
 
-plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r")
-#plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
-plt.gca().set_aspect('equal', adjustable='box')
-plt.colorbar()
-plt.savefig("images/PAD.png")
+if SLICE == "XY":
+    plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r")
+    #plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.colorbar()
+    plt.savefig("images/PAD.png")
+elif SLICE == "XZ":
+    plt.scatter(kz_vals, kx_vals, c=pad_vals, cmap="hot_r")
+    #plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.colorbar()
+    plt.savefig("images/PAD.png")
 
-plt.clf()
+
 
 
 

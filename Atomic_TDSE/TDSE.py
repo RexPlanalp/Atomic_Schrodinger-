@@ -264,8 +264,34 @@ class Tdse:
         B = basisInstance.B
         integrate = basisInstance.integrate
 
-        def _H_inv_2_R_element(x,i,j,knots,order):
-            return (B(i, order, x, knots)*B(j, order, x, knots)/(x**2+1E-25))
+        if self.parameters["species"] == "H":
+            def _H_inv_2_R_element(x,i,j,knots,order):
+                return (B(i, order, x, knots)*B(j, order, x, knots)/(x**2+1E-25))
+        elif self.parameters["species"] == "Ar":
+            def dAr(x):
+                a = 1e-25  # Small constant to avoid division by zero
+                
+                # Term 1: Derivative of -1/(x + a)
+                term1 = 1.0 / (x**2 + a)
+                
+                # Term 2: Derivative of -17 * exp(-0.8103x) / (x + a)
+                term2 = 17.0 * 0.8103 * np.exp(-0.8103 * x) / (x + a)
+                term3 = 17.0 * np.exp(-0.8103 * x) / (x**2 + a)
+                
+                # Term 3: Derivative of 15.9583 * exp(-1.2305x)
+                term4 = -15.9583 * 1.2305 * np.exp(-1.2305 * x)
+                
+                # Term 4: Derivative of 27.7467 * exp(-4.3946x)
+                term5 = -27.7467 * 4.3946 * np.exp(-4.3946 * x)
+                
+                # Term 5: Derivative of -2.1768 * exp(-86.7179x)
+                term6 = 2.1768 * 86.7179 * np.exp(-86.7179 * x)
+                
+                # Sum all terms to get the derivative
+                return term1 + term2 + term3 + term4 + term5 + term6
+            def _H_inv_2_R_element(x,i,j,knots,order):
+                return (B(i, order, x, knots)*B(j, order, x, knots)*dAr(x))
+        
         H_inv_2_R = PETSc.Mat().createAIJ([n_basis,n_basis],comm = PETSc.COMM_WORLD,nnz = 2*(order-1)+1)
         istart,iend = H_inv_2_R.getOwnershipRange()
         for i in range(istart,iend):
