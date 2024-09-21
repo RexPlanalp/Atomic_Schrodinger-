@@ -434,28 +434,32 @@ class Tdse:
 
         if self.parameters["HHG"]:
             HHG_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
+            laser_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
 
         for idx in range(total_iterations):
 
             if self.parameters["HHG"]:
                 if polarization[0]:
-                    temp = self.HHG[0].createVecRight()
-                    self.HHG[0].mult(psi_initial, temp)
+                    temp = self.hhgs[0].createVecRight()
+                    self.hhgs[0].mult(psi_initial, temp)
                     prodx = psi_initial.dot(temp)
                     temp.destroy()
                     HHG_data[0,idx] = prodx
+                    laser_data[0,idx] = laserInstance.Ax_func(idx*dt)
                 if polarization[1]:
-                    temp = self.HHG[1].createVecRight()
-                    self.HHG[1].mult(psi_initial, temp)
+                    temp = self.hhgs[1].createVecRight()
+                    self.hhgs[1].mult(psi_initial, temp)
                     prody = psi_initial.dot(temp)
                     temp.destroy()
                     HHG_data[1,idx] = prody
+                    laser_data[1,idx] = laserInstance.Ay_func(idx*dt)
                 if polarization[2]:
-                    temp = self.HHG[2].createVecRight()
-                    self.HHG[2].mult(psi_initial, temp)
+                    temp = self.hhgs[2].createVecRight()
+                    self.hhgs[2].mult(psi_initial, temp)
                     prodz = psi_initial.dot(temp)
                     temp.destroy()
                     HHG_data[2,idx] = prodz
+                    laser_data[2,idx] = laserInstance.Az_func(idx*dt)
 
 
 
@@ -541,6 +545,7 @@ class Tdse:
 
         if self.parameters["HHG"]:
             np.save("TDSE_files/HHG_data.npy",HHG_data)
+            np.save("TDSE_files/laser_data.npy",laser_data)
             
         ViewHDF5 = PETSc.Viewer().createHDF5("TDSE.h5", mode=PETSc.Viewer.Mode.WRITE, comm= PETSc.COMM_WORLD)
         psi_initial.setName("psi_final")

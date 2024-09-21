@@ -69,11 +69,15 @@ class laser:
                 
 
     def plotPulse(self):
-        plt.plot(self.total_time,self.Ax_func(self.total_time),label = "X")
-        plt.plot(self.total_time,self.Ay_func(self.total_time),label = "Y")
-        plt.plot(self.total_time,self.Az_func(self.total_time),label = "Z")
-        plt.legend()
-        plt.savefig("images/laser.png")
+        if rank == 0:
+            plt.plot(self.total_time,self.Ax_func(self.total_time),label = "X")
+            plt.plot(self.total_time,self.Ay_func(self.total_time),label = "Y")
+            plt.plot(self.total_time,self.Az_func(self.total_time),label = "Z")
+            plt.legend()
+            plt.savefig("images/laser.png")
+            plt.clf()
+
+            np.save("TDSE_files/t_total.npy",self.total_time)
     
         
         
