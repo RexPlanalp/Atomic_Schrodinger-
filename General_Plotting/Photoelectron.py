@@ -75,12 +75,16 @@ if SLICE == "XY":
     plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r")
     #plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
     plt.gca().set_aspect('equal', adjustable='box')
+    plt.xlabel("kx")
+    plt.ylabel("ky")
     plt.colorbar()
     plt.savefig("images/PAD.png")
 elif SLICE == "XZ":
     plt.scatter(kz_vals, kx_vals, c=pad_vals, cmap="hot_r")
     #plt.scatter(kz_vals, kx_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
     plt.gca().set_aspect('equal', adjustable='box')
+    plt.xlabel("kz")
+    plt.ylabel("kx")
     plt.colorbar()
     plt.savefig("images/PAD.png")
 
