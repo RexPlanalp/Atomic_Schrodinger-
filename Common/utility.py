@@ -74,8 +74,6 @@ def gather_matrix(M, comm, root):
             return PETSc.Mat().createAIJWithArrays([M.getSize()[0], M.getSize()[1]], (global_indptr, global_indices, global_data), comm=PETSc.COMM_SELF)
         return None
 
-
-
 def kron(A, B, comm,nonzeros):
     comm = comm.tompi4py()
     root = 0

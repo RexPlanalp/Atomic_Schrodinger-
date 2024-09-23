@@ -237,9 +237,9 @@ class Tdse:
                 l,m = self.block_dict[i]
                 for j in range(n_block):
                     lprime,mprime = self.block_dict[j]
-                    if l == lprime+1:
+                    if (l == lprime+1) and (m == mprime):
                         H_Z_lm_1.setValue(i,j,dlm(l,m))
-                    elif l == lprime-1:
+                    elif (l == lprime-1) and (m == mprime):
                         H_Z_lm_1.setValue(i,j,clm(l,m))
             PETSc.COMM_WORLD.barrier()
             H_Z_lm_1.assemble()
@@ -250,9 +250,9 @@ class Tdse:
                 l,m = self.block_dict[i]
                 for j in range(n_block):
                     lprime,mprime = self.block_dict[j]
-                    if l == lprime+1:
+                    if (l == lprime+1) and (m == mprime):
                         H_Z_lm_2.setValue(i,j,-(l)*dlm(l,m))
-                    elif l == lprime-1:
+                    elif (l == lprime-1) and (m == mprime):
                         H_Z_lm_2.setValue(i,j,(l+1)*clm(l,m))
             PETSc.COMM_WORLD.barrier()
             H_Z_lm_2.assemble()
