@@ -65,13 +65,14 @@ class Tdse:
         self.state = psi_initial
         return None
 
-    def constructInteraction(self,basisInstance):
+    def constructInteraction(self,basisInstance,laserInstance):
         self.hamiltonians = [0]*3
 
         n_block = self.parameters["n_block"]
         n_basis = self.parameters["splines"]["n_basis"]
         order = self.parameters["splines"]["order"]
         polarization = self.parameters["lasers"]["polarization"]
+        components = laserInstance.components
         kron = utility.kron
 
         knots = basisInstance.knots
@@ -106,7 +107,7 @@ class Tdse:
         H_inv_R.assemble()
 
 
-        if polarization[0] or polarization[1]:
+        if components[0] or components[1]:
             def a(l,m):
                 f1 = np.sqrt((l+m)/((2*l+1)*(2*l-1)))
                 f2 = -m * np.sqrt(l+m-1) - np.sqrt((l-m)*(l*(l-1)- m*(m-1)))
@@ -208,7 +209,7 @@ class Tdse:
             
             self.hamiltonians[1] = term3
             
-        if polarization[2]:
+        if components[2]:
             def clm(l,m):
                 return -1j*np.sqrt(((l+1)**2 - m**2)/((2*l+1)*(2*l+3)))
             def dlm(l,m):
@@ -249,7 +250,7 @@ class Tdse:
 
             self.hamiltonians[2] = H_Z_1
 
-    def constructHHG(self,basisInstance):
+    def constructHHG(self,basisInstance,laserInstance):
         if not self.parameters["HHG"]:
             return None
         self.hhgs = [0]*3
@@ -258,6 +259,7 @@ class Tdse:
         n_basis = self.parameters["splines"]["n_basis"]
         order = self.parameters["splines"]["order"]
         polarization = self.parameters["lasers"]["polarization"]
+        components = laserInstance.components
         kron = utility.kron
 
         knots = basisInstance.knots
@@ -325,7 +327,7 @@ class Tdse:
             f1 = np.sqrt(((l+m+1)*(l-m+1))/((2*l +1)*(2*l + 3)))
             return f1
         
-        if polarization[0]:
+        if components[0]:
             HHG_x_lm = PETSc.Mat().createAIJ([n_block,n_block],comm = PETSc.COMM_WORLD,nnz = 4)
             istart,iend = HHG_x_lm.getOwnershipRange()
             for i in range(istart,iend):
@@ -350,7 +352,7 @@ class Tdse:
             HHG_x = kron(HHG_x_lm,H_inv_2_R,comm,4*(2*(order-1) + 1))
             self.hhgs[0] = HHG_x
 
-        if polarization[1]:
+        if components[1]:
             HHG_y_lm = PETSc.Mat().createAIJ([n_block,n_block],comm = PETSc.COMM_WORLD,nnz = 4)
             istart,iend = HHG_y_lm.getOwnershipRange()
             for i in range(istart,iend):
@@ -375,7 +377,7 @@ class Tdse:
             HHG_y = kron(HHG_y_lm,H_inv_2_R,comm,4*(2*(order-1) + 1))
             self.hhgs[1] = HHG_y
                     
-        if polarization[2]:
+        if components[2]:
             HHG_z_lm = PETSc.Mat().createAIJ([n_block,n_block],comm = PETSc.COMM_WORLD,nnz = 2)
             istart,iend = HHG_z_lm.getOwnershipRange()
             for i in range(istart,iend):
@@ -435,6 +437,7 @@ class Tdse:
     def propagateState(self,laserInstance):
         dt = self.parameters["box"]["time_spacing"]
         polarization = self.parameters["lasers"]["polarization"]
+        components = laserInstance.components
 
         psi_initial = self.state
 
@@ -465,21 +468,21 @@ class Tdse:
         for idx in range(total_iterations):
 
             if self.parameters["HHG"]:
-                if polarization[0]:
+                if components[0]:
                     temp = self.hhgs[0].createVecRight()
                     self.hhgs[0].mult(psi_initial, temp)
                     prodx = psi_initial.dot(temp)
                     temp.destroy()
                     HHG_data[0,idx] = prodx
                     laser_data[0,idx] = laserInstance.Ax_func(idx*dt)
-                if polarization[1]:
+                if components[1]:
                     temp = self.hhgs[1].createVecRight()
                     self.hhgs[1].mult(psi_initial, temp)
                     prody = psi_initial.dot(temp)
                     temp.destroy()
                     HHG_data[1,idx] = prody
                     laser_data[1,idx] = laserInstance.Ay_func(idx*dt)
-                if polarization[2]:
+                if components[2]:
                     temp = self.hhgs[2].createVecRight()
                     self.hhgs[2].mult(psi_initial, temp)
                     prodz = psi_initial.dot(temp)
@@ -497,7 +500,7 @@ class Tdse:
             if PETSc.COMM_WORLD.rank == 0:
                     print(idx,total_iterations)
             if idx < Nt:
-                if polarization[0] or polarization[1]:
+                if components[0] or components[1]:
                     A_tilde = (laserInstance.Ax_func(t+dt/2) + 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
                     A_tilde_star = (laserInstance.Ax_func(t+dt/2) - 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
                     
@@ -507,7 +510,7 @@ class Tdse:
                     partial_L_copy.axpy(A_tilde_star,self.hamiltonians[0],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
                     partial_R_copy.axpy(-A_tilde_star,self.hamiltonians[0],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
 
-                if polarization[2]:
+                if components[2]:
                     Az = laserInstance.Az_func(t+dt/2)*1j*dt/2
                     partial_L_copy.axpy(Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
                     partial_R_copy.axpy(-Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
