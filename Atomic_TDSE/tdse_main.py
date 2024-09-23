@@ -52,8 +52,8 @@ if rank == 0:
     print("Starting TDSE Simulation")
     print("\n")
 TDSEInstance.readInState()
-TDSEInstance.constructInteraction(basisInstance)
-TDSEInstance.constructHHG(basisInstance)
+TDSEInstance.constructInteraction(basisInstance,laserInstance)
+TDSEInstance.constructHHG(basisInstance,laserInstance)
 TDSEInstance.constructAtomic()
 TDSEInstance.propagateState(laserInstance)
 if rank == 0:
