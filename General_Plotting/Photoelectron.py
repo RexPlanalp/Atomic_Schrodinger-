@@ -69,7 +69,7 @@ ky_vals = k_vals * np.sin(theta_vals) * np.sin(phi_vals)
 kz_vals = k_vals * np.cos(theta_vals)
 
 max = np.max(np.real(pad_vals))
-min = np.max(np.real(pad_vals))*10**-2
+min = np.max(np.real(pad_vals))*10**-6
 
 if SLICE == "XY":
     plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r")
@@ -78,8 +78,8 @@ if SLICE == "XY":
     plt.colorbar()
     plt.savefig("images/PAD.png")
 elif SLICE == "XZ":
-    plt.scatter(kz_vals, kx_vals, c=pad_vals, cmap="hot_r")
-    #plt.scatter(kx_vals, ky_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
+    #plt.scatter(kz_vals, kx_vals, c=pad_vals, cmap="hot_r")
+    plt.scatter(kz_vals, kx_vals, c=pad_vals, cmap="hot_r",norm=mcolors.LogNorm(vmin=min,vmax=max))
     plt.gca().set_aspect('equal', adjustable='box')
     plt.colorbar()
     plt.savefig("images/PAD.png")
