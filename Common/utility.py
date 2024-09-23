@@ -9,12 +9,12 @@ comm = PETSc.COMM_WORLD
 rank = comm.rank
 
 
-def lm_expansion(lmax, state, polarization):
+def lm_expansion(lmax, state, components):
     delta_l = [1, -1]
     delta_m = []
-    if polarization[0] or polarization[1]:
+    if components[0] or components[1]:
         delta_m.extend([1, -1])
-    if polarization[2]:
+    if components[2]:
         delta_m.append(0)
 
     def is_valid(l, m):

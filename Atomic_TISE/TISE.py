@@ -21,9 +21,28 @@ class Tise:
         self.input_file = input_file
 
         if self.parameters["TISE"]["embed"]:
+            from numpy.linalg import norm
+            from numpy import cross
+
+
+            polarization = self.parameters["lasers"]["polarization"]
+            polarization /= norm(polarization)
+
+            poynting = self.parameters["lasers"]["poynting"]
+            poynting /= norm(poynting)
+
+            ellipticity_Vector = cross(polarization, poynting) 
+            ellipticity_Vector /= norm(ellipticity_Vector)
+
+            ell = self.parameters["lasers"]["ell"]
+            
+            components = [(1 if polarization[i] != 0 or ell * ellipticity_Vector[i] != 0 else 0) for i in range(3)]
+
+
+
             self.lm_dict,self.block_dict = utility.lm_expansion(self.parameters["lm"]["lmax"], \
                                                             self.parameters["state"], \
-                                                                self.parameters["lasers"]["polarization"])
+                                                                components)
             self.parameters["total_size"] = len(self.lm_dict) * self.parameters["splines"]["n_basis"]
             self.parameters["n_block"] = len(self.lm_dict)
 
