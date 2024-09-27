@@ -50,7 +50,7 @@ if "SLICE" in sys.argv:
         l, m = key
         if (l, m) not in lm_vals:
             continue
-        print(l,m)
+        
         total_amplitues[(l, m)] = np.abs((-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx])
         total_phases[(l, m)] = np.angle((-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx])
 
@@ -71,8 +71,10 @@ if "SLICE" in sys.argv:
         
             #pad_amp += total_amplitues[key] * np.exp(1j*total_phases[key]) * sph_harm(m, l, phi, np.pi / 2) 
             #pad_amp_opp += total_amplitues[key] * np.exp(1j*total_phases[key]) * sph_harm(m, l, phi+np.pi, np.pi / 2) 
-            pad_amp += np.exp(1j*total_phases[key]) * sph_harm(m, l, phi, np.pi / 2) 
-            pad_amp_opp += np.exp(1j*total_phases[key]) * sph_harm(m, l, phi+np.pi, np.pi / 2) 
+            import random
+            a = 1
+            pad_amp += a*np.exp(1j*total_phases[key]) * sph_harm(m, l, phi, np.pi / 2) 
+            pad_amp_opp += a*np.exp(1j*total_phases[key]) * sph_harm(m, l, phi+np.pi, np.pi / 2) 
         
         # Compute the photoelectron angular distributions
         pad_val = np.abs(pad_amp) ** 2
