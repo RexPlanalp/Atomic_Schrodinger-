@@ -5,14 +5,10 @@ import matplotlib.pyplot as plt
 
 # Ip = -0.5791546178 # Ionization potential of species in atomic units
 Ip = -0.5
-N = 10 # Numbe08r of cycles of laser pulse 
-
-
-lam = 1200
-w = 0.057 * 800/lam
-#w = 0.057# Central Frequency of laser pulse in atomic units
+N = 20 # Numbe08r of cycles of laser pulse 
+w = 0.057# Central Frequency of laser pulse in atomic units
 I = 2e14 / 3.51E16 # Intensity of laser pulse in atomic units
-E = 0.48 # Energy in atomic units (usually at ATI peak)
+E = 0.55 # Energy in atomic units (usually at ATI peak)
 #E = 0.608
 
 tau = 2*np.pi/w # Period of laser pulse in atomic units

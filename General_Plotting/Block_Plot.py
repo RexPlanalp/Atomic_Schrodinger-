@@ -112,8 +112,7 @@ class PES:
 
         return np.real(total)
 
-
-    def plot_distribution_slice(self):
+    def plot_distribution_slice(self,projOutCont,log):
         n_basis = self.parameters["splines"]["n_basis"]
         lmax = self.parameters["lm"]["lmax"]
         pot = self.parameters["species"]
@@ -127,90 +126,104 @@ class PES:
             if l != -m:
                 continue
             wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
+            if projOutCont:
+                with h5py.File(f'TISE_files/{pot}.h5', 'r') as f:
+                    datasets = list(f.keys())
+                    for dataset_name in datasets:
+                        if dataset_name.startswith('Psi_'):
+                            parts = dataset_name.split('_')
+                            current_n = int(parts[1])
+                            current_l = int(parts[2])
+
+                            if current_l == l:
+                                data = f[dataset_name][:]
+                                real_part = data[:, 0]
+                                imaginary_part = data[:, 1]
+                                bound_state = real_part + 1j * imaginary_part
+
+                                # Project out the bound state
+                                inner_product = bound_state.conj().dot(S_R.dot(wavefunction_block))
+                                wavefunction_block -= inner_product * bound_state
+
+
+
             norm = wavefunction_block.conj().dot(S_R.dot(wavefunction_block))
             probs.append(np.real(norm))
             ls.append(l)
         
         plt.bar(ls,probs,color = "k")
-        plt.yscale('log')
+        if log:
+            plt.yscale('log')
+        else:
+            plt.yscale('linear')
         plt.savefig("images/dist_slice.png")
         return None
-    # def compute_distribution(self, CONT=False):
-    #     # Initialize variables
-    #     n_basis = self.parameters["splines"]["n_basis"]
-    #     lmax = self.parameters["lm"]["lmax"]
-    #     pot = self.parameters["species"]
-    #     wavefunction = self.final_state
-    #     lm_dict = self.lm_dict
-    #     S_R = self.S_R
+    
+    def compute_distribution(self, projOutCont,log):
+        # Initialize variables
+        n_basis = self.parameters["splines"]["n_basis"]
+        lmax = self.parameters["lm"]["lmax"]
+        pot = self.parameters["species"]
+        wavefunction = self.final_state
+        lm_dict = self.lm_dict
+        S_R = self.S_R
 
-    #     lm_list = []
-    #     pyramid = [[None for _ in range(2 * lmax + 1)] for _ in range(lmax + 1)]
+        
+        pyramid = [[None for _ in range(2 * lmax + 1)] for _ in range(lmax + 1)]
 
-    #     # Loop over l and m values, computing probabilities
-    #     for (l, m), block_index in lm_dict.items():
-    #         print(f"Computing Probability of having l,m = {l,m}")
-    #         wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
+        # Loop over l and m values, computing probabilities
+        for (l, m), block_index in lm_dict.items():
+            
+            wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
 
-    #         # If CONT flag is set, project out bound states
-    #         if CONT:
-    #             with h5py.File(f'TISE_files/{pot}.h5', 'r') as f:
-    #                 datasets = list(f.keys())
-    #                 for dataset_name in datasets:
-    #                     if dataset_name.startswith('Psi_'):
-    #                         parts = dataset_name.split('_')
-    #                         current_n = int(parts[1])
-    #                         current_l = int(parts[2])
+            # If CONT flag is set, project out bound states
+            if projOutCont:
+                with h5py.File(f'TISE_files/{pot}.h5', 'r') as f:
+                    datasets = list(f.keys())
+                    for dataset_name in datasets:
+                        if dataset_name.startswith('Psi_'):
+                            parts = dataset_name.split('_')
+                            current_n = int(parts[1])
+                            current_l = int(parts[2])
 
-    #                         if current_l == l:
-    #                             data = f[dataset_name][:]
-    #                             real_part = data[:, 0]
-    #                             imaginary_part = data[:, 1]
-    #                             bound_state = real_part + 1j * imaginary_part
+                            if current_l == l:
+                                data = f[dataset_name][:]
+                                real_part = data[:, 0]
+                                imaginary_part = data[:, 1]
+                                bound_state = real_part + 1j * imaginary_part
 
-    #                             # Project out the bound state
-    #                             inner_product = bound_state.conj().dot(S_R.dot(wavefunction_block))
-    #                             wavefunction_block -= inner_product * bound_state
+                                # Project out the bound state
+                                inner_product = bound_state.conj().dot(S_R.dot(wavefunction_block))
+                                wavefunction_block -= inner_product * bound_state
 
-    #         # Compute probability
-    #         probability = wavefunction_block.conj().dot(S_R.dot(wavefunction_block))
-    #         pyramid[l][m + lmax] = np.real(probability)
+            # Compute probability
+            probability = wavefunction_block.conj().dot(S_R.dot(wavefunction_block))
+            pyramid[l][m + lmax] = np.real(probability)
 
-    #         # Add to lm_list if l == m (for circular polarization)
-    #         if l == m:
-    #             lm_list.append(np.real(probability))
+            # Add to lm_list if l == m (for circular polarization)
+            
+        # Generate the pyramid heatmap
+        pyramid_array = np.array([[val if val is not None else 0 for val in row] for row in pyramid])
+        fig, ax = plt.subplots(figsize=(10, 8))
 
-    #     # Plot bar chart for l==m blocks
-    #     plt.figure()
-    #     l_array = [l for l, m in lm_dict.keys() if l == m]
-    #     plt.bar(l_array, lm_list, color="k")
-    #     plt.yscale('log')
-    #     plt.title("Cont States" if CONT else "Bound + Cont States")
-    #     plt.xlabel("Block")
-    #     plt.ylabel("Probability")
-    #     plt.savefig("images/blocks.png")
-    #     plt.clf()
+        pyramid_array[pyramid_array==0] = np.min(pyramid_array[pyramid_array!=0])
+        if log:
+            cax = ax.imshow(pyramid_array[::-1], cmap='inferno', interpolation='nearest', norm=LogNorm())  # Reverse for upside-down pyramid
+        else:
+            cax = ax.imshow(pyramid_array[::-1], cmap='inferno', interpolation='nearest')
+        ax.set_xlabel('m')
+        ax.set_ylabel('l')
 
-    #     # Generate the pyramid heatmap
-    #     pyramid_array = np.array([[val if val is not None else 0 for val in row] for row in pyramid])
-    #     fig, ax = plt.subplots(figsize=(10, 8))
-    #     cax = ax.imshow(pyramid_array[::-1], cmap='inferno', interpolation='nearest', norm=LogNorm())  # Reverse for upside-down pyramid
-    #     ax.set_xlabel('m')
-    #     ax.set_ylabel('l')
-
-    #     fig.colorbar(cax, ax=ax, shrink=0.5)
-    #     plt.title('Heatmap of Probabilities for l and m Values')
-    #     plt.savefig("images/pyramid.png")
-    #     plt.show()
-
-    #     print("Total Probability", np.sum(lm_list))
-
+        fig.colorbar(cax, ax=ax, shrink=0.5)
+        plt.title('Heatmap of Probabilities for l and m Values')
+        plt.savefig("images/pyramid.png")
+        plt.show()
 
 if __name__ == '__main__':
     pes = PES("input.json")
     pes.loadS_R()
     pes.load_final_state()
-    #pes.compute_distribution(CONT=True)
     pes.compute_norm()
-    pes.plot_distribution_slice()
+    pes.compute_distribution(projOutCont=False,log = False)
+    pes.plot_distribution_slice(projOutCont=False,log = True)
     
