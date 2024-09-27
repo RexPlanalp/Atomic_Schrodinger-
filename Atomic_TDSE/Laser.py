@@ -21,7 +21,7 @@ class laser:
         N = TDSEInstance.parameters["box"]["N"]
         N_post = TDSEInstance.parameters["box"]["N_post"]
 
-        ell = TDSEInstance.parameters["lasers"]["ell"]
+        ell = -TDSEInstance.parameters["lasers"]["ell"]
 
        
         

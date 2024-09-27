@@ -31,7 +31,7 @@ class Tdse:
         ellipticity_Vector = np.cross(polarization, poynting) 
         ellipticity_Vector /= np.linalg.norm(ellipticity_Vector)
 
-        ell = self.parameters["lasers"]["ell"]
+        ell = -self.parameters["lasers"]["ell"]
         
         components = [(1 if polarization[i] != 0 or ell * ellipticity_Vector[i] != 0 else 0) for i in range(3)]
 
