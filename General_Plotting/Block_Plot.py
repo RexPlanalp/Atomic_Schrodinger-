@@ -112,22 +112,10 @@ class PES:
 
         return np.real(total)
 
-    def plot_distribution_slice(self,projOutCont,log):
-        n_basis = self.parameters["splines"]["n_basis"]
-        lmax = self.parameters["lm"]["lmax"]
+    def project_out_bound_states(self,wavefunction_block,l):
         pot = self.parameters["species"]
-        wavefunction = self.final_state
-        lm_dict = self.lm_dict
-        S_R = self.S_R
 
-        probs = []
-        ls = []
-        for (l, m), block_index in lm_dict.items():
-            if l != -m:
-                continue
-            wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
-            if projOutCont:
-                with h5py.File(f'TISE_files/{pot}.h5', 'r') as f:
+        with h5py.File(f'TISE_files/{pot}.h5', 'r') as f:
                     datasets = list(f.keys())
                     for dataset_name in datasets:
                         if dataset_name.startswith('Psi_'):
@@ -142,8 +130,28 @@ class PES:
                                 bound_state = real_part + 1j * imaginary_part
 
                                 # Project out the bound state
-                                inner_product = bound_state.conj().dot(S_R.dot(wavefunction_block))
+                                inner_product = bound_state.conj().dot(self.S_R.dot(wavefunction_block))
                                 wavefunction_block -= inner_product * bound_state
+
+        return wavefunction_block
+    
+    def plot_distribution_slice(self,projOutBound,log):
+        n_basis = self.parameters["splines"]["n_basis"]
+        lmax = self.parameters["lm"]["lmax"]
+        pot = self.parameters["species"]
+        wavefunction = self.final_state
+        lm_dict = self.lm_dict
+        S_R = self.S_R
+
+        probs = []
+        ls = []
+        for (l, m), block_index in lm_dict.items():
+            if l != -m:
+                continue
+            wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
+
+            if projOutBound:
+                wavefunction_block = self.project_out_bound_states(wavefunction_block,l)
 
 
 
@@ -157,9 +165,10 @@ class PES:
         else:
             plt.yscale('linear')
         plt.savefig("images/dist_slice.png")
+        plt.clf()
         return None
     
-    def compute_distribution(self, projOutCont,log):
+    def compute_distribution(self, projOutBound,log):
         # Initialize variables
         n_basis = self.parameters["splines"]["n_basis"]
         lmax = self.parameters["lm"]["lmax"]
@@ -177,24 +186,8 @@ class PES:
             wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
 
             # If CONT flag is set, project out bound states
-            if projOutCont:
-                with h5py.File(f'TISE_files/{pot}.h5', 'r') as f:
-                    datasets = list(f.keys())
-                    for dataset_name in datasets:
-                        if dataset_name.startswith('Psi_'):
-                            parts = dataset_name.split('_')
-                            current_n = int(parts[1])
-                            current_l = int(parts[2])
-
-                            if current_l == l:
-                                data = f[dataset_name][:]
-                                real_part = data[:, 0]
-                                imaginary_part = data[:, 1]
-                                bound_state = real_part + 1j * imaginary_part
-
-                                # Project out the bound state
-                                inner_product = bound_state.conj().dot(S_R.dot(wavefunction_block))
-                                wavefunction_block -= inner_product * bound_state
+            if projOutBound:
+                wavefunction_block = self.project_out_bound_states(wavefunction_block,l)
 
             # Compute probability
             probability = wavefunction_block.conj().dot(S_R.dot(wavefunction_block))
@@ -217,13 +210,15 @@ class PES:
         fig.colorbar(cax, ax=ax, shrink=0.5)
         plt.title('Heatmap of Probabilities for l and m Values')
         plt.savefig("images/pyramid.png")
-        plt.show()
+        plt.clf()
 
 if __name__ == '__main__':
     pes = PES("input.json")
     pes.loadS_R()
     pes.load_final_state()
     pes.compute_norm()
-    pes.compute_distribution(projOutCont=False,log = False)
-    pes.plot_distribution_slice(projOutCont=False,log = True)
+    pes.compute_distribution(projOutBound=False,log = True)
+    pes.plot_distribution_slice(projOutBound=False,log = True)
+
+  
     
