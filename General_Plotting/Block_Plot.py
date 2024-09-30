@@ -146,7 +146,7 @@ class PES:
         probs = []
         ls = []
         for (l, m), block_index in lm_dict.items():
-            if l != -m:
+            if l != m:
                 continue
             wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
 
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     pes.loadS_R()
     pes.load_final_state()
     pes.compute_norm()
-    pes.compute_distribution(projOutBound=False,log = True)
+    pes.compute_distribution(projOutBound=True,log = True)
     pes.plot_distribution_slice(projOutBound=False,log = True)
 
   

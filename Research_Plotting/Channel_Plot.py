@@ -8,7 +8,7 @@ Ip = -0.5
 N = 10 # Numbe08r of cycles of laser pulse 
 w = 0.057 * 800/1600
 I = 2e14 / 3.51E16 # Intensity of laser pulse in atomic units
-E = 0.48 # Energy in atomic units (usually at ATI peak)
+E = 1 # Energy in atomic units (usually at ATI peak)
 
 
 
