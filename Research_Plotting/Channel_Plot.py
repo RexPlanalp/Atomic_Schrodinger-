@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 #Ip = -0.5791546178 # Ionization potential of species in atomic units
 Ip = -0.5
 N = 10 # Numbe08r of cycles of laser pulse 
-w = 0.057 * 800/1600
+w = 0.057 * 800/800
 I = 2e14 / 3.51E16 # Intensity of laser pulse in atomic units
 E = 1 # Energy in atomic units (usually at ATI peak)
 
@@ -18,6 +18,7 @@ envelope = np.sin(np.pi*t/tau)**2 # Envelope function, usually Sin2
 I_profile = I * envelope # Intensity profile of laser pulse
 Up = I_profile/(4*w**2) # Pondermotive energy in atomic units
 
+print(np.max(Up))
 
 lmax_predicted = (-Ip + 10*np.max(Up))/w
 print("Predicted maximum lmax for expansion ", lmax_predicted)
