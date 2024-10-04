@@ -164,6 +164,9 @@ class PES:
             plt.yscale('log')
         else:
             plt.yscale('linear')
+        plt.title("Probability for l = m states")
+        plt.xlabel("l or m ")
+        plt.ylabel("Probability")
         plt.savefig("images/dist_slice.png")
         plt.clf()
         return None
@@ -206,6 +209,21 @@ class PES:
             cax = ax.imshow(pyramid_array[::-1], cmap='inferno', interpolation='nearest')
         ax.set_xlabel('m')
         ax.set_ylabel('l')
+        
+        # Set x-axis to show only -lmax, 0, and lmax
+        ax.set_xticks([0, lmax, 2 * lmax])  # Set ticks at far left (-lmax), middle (0), and far right (lmax)
+        ax.set_xticklabels([-lmax, 0, lmax])
+                # Set y-axis to show only the first and final tick (0 and lmax)
+        ax.set_yticks([0, lmax])  # Only show the first and last ticks
+        ax.set_yticklabels([lmax, 0])  # Label the ticks as 0 and lmax
+
+        # Set labels
+        ax.set_xlabel('m')
+        ax.set_ylabel('l')
+
+        # Hide all intermediate ticks
+        ax.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False)  # Hide ticks between labeled ones
+
 
         fig.colorbar(cax, ax=ax, shrink=0.5)
         plt.title('Heatmap of Probabilities for l and m Values')
@@ -217,8 +235,8 @@ if __name__ == '__main__':
     pes.loadS_R()
     pes.load_final_state()
     pes.compute_norm()
-    pes.compute_distribution(projOutBound=True,log = True)
-    pes.plot_distribution_slice(projOutBound=False,log = True)
+    pes.compute_distribution(projOutBound=True,log=True)
+    pes.plot_distribution_slice(projOutBound=True,log = True)
 
   
     
