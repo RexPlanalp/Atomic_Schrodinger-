@@ -73,7 +73,7 @@ class PES:
 
         rmax = self.parameters["box"]["grid_size"]
         dr = self.parameters["box"]["grid_spacing"]
-        self.r_range = np.arange(0, rmax+dr, dr)
+        self.r_range = np.arange(dr, rmax+dr, dr)
         self.Nr = len(self.r_range)
 
         dE,Emax = self.parameters["E"]
@@ -174,7 +174,7 @@ class PES:
 
         # Initialize Coulomb wave array for all l values
         coul_wave = np.zeros((l_values.size, self.r_range.size))
-        coul_wave[:, 0] = 1.0  # Initialize first point for all l values
+        coul_wave[:, 0] = self.r_range[0]** (l_values + 1)  # Initialize first point for all l values
 
         # Adjust initialization for the second point
         coul_wave[:, 1] = coul_wave[:, 0] * (dr2 * (l_term / r_range2[1] + 2 * potential[:, 1] + 2 * E) + 2)
