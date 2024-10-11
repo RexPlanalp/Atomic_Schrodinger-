@@ -587,7 +587,6 @@ class Tdse:
         psi_initial.setName("psi_final")
         ViewHDF5.view(psi_initial)
         ViewHDF5.destroy()
-
         return None
 
 
