@@ -457,7 +457,7 @@ class Tdse:
         S_norm.destroy()
         return np.real(prod)
 
-    def computeNormIndices(self,Nt_total,num_of_indices = 100):
+    def computeNormIndices(self,Nt_total,num_of_indices = 20):
         norm_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
         return norm_indices
 
@@ -538,31 +538,40 @@ class Tdse:
 
             if PETSc.COMM_WORLD.rank == 0:
                 print(idx,Nt_total)
+
             if idx < Nt:
-                partial_L_copy = self.partial_L.copy()
-                partial_R_copy = self.partial_R.copy()
-                self.addInteraction(partial_L_copy, partial_R_copy, t, dt, components, laserInstance)
-                ksp.setOperators(partial_L_copy)
-                partial_R_copy.mult(psi_initial, known)
-                partial_L_copy.destroy()
-                partial_R_copy.destroy()
-            else:
-                ksp.setOperators(self.atomic_L)
-                self.atomic_R.mult(psi_initial, known)
-            
-            # Solve the linear system
-            ksp.solve(known, solution)
+                if components[0] or components[1]:
+                    A_tilde = (laserInstance.Ax_func(t+dt/2) + 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
+                    A_tilde_star = (laserInstance.Ax_func(t+dt/2) - 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
+                    
+                    partial_L_copy.axpy(A_tilde,self.hamiltonians[1],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+                    partial_R_copy.axpy(-A_tilde,self.hamiltonians[1],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+
+                    partial_L_copy.axpy(A_tilde_star,self.hamiltonians[0],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+                    partial_R_copy.axpy(-A_tilde_star,self.hamiltonians[0],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+
+                if components[2]:
+                    Az = laserInstance.Az_func(t+dt/2)*1j*dt/2
+                    partial_L_copy.axpy(Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+                    partial_R_copy.axpy(-Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+
+            partial_R_copy.mult(psi_initial,known)
+
+            ksp.setOperators(partial_L_copy)
+            ksp.solve(known,solution)
             solution.copy(psi_initial)
-            known.destroy()
-            solution.destroy()
-
-
 
             current_norm = self.computeNorm(psi_initial)
             if rank == 0 and idx in norm_indices:
                 norm_file = open("TDSE_files/norms.txt","a")
                 norm_file.write(f"Norm of state at step {idx}: {current_norm} \n")
                 norm_file.close()
+
+            partial_L_copy.destroy()
+            partial_R_copy.destroy()
+            known.destroy()
+            solution.destroy()
+          
 
                
         final_norm = self.computeNorm(psi_initial)
