@@ -532,7 +532,7 @@ class Tdse:
             partial_R_copy = self.atomic_R.copy()
 
             known = partial_R_copy.createVecRight() 
-            solution = self.atomic_L.createVecRight()
+            solution = partial_L_copy.createVecRight()
 
             t = idx * dt
 
@@ -556,12 +556,12 @@ class Tdse:
                     partial_R_copy.axpy(-Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
 
             partial_R_copy.mult(psi_initial,known)
-
             ksp.setOperators(partial_L_copy)
             ksp.solve(known,solution)
             solution.copy(psi_initial)
 
-            current_norm = self.computeNorm(psi_initial)
+            if idx in norm_indices:
+                current_norm = self.computeNorm(psi_initial)
             if rank == 0 and idx in norm_indices:
                 norm_file = open("TDSE_files/norms.txt","a")
                 norm_file.write(f"Norm of state at step {idx}: {current_norm} \n")
