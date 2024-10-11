@@ -64,7 +64,6 @@ if rank == 0:
 if rank == 0:
     print("Cleaning up...")
     os.system("rm -rf temp")
-    os.system("mv TDSE.h5 TDSE_files")
 
 
 

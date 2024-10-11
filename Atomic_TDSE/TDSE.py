@@ -461,23 +461,71 @@ class Tdse:
         norm_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
         return norm_indices
 
+    def computeCheckpointIndices(self,Nt_total,num_of_indices = 4):
+        checkpoint_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
+        return checkpoint_indices
+
+    def loadStartingState(self):
+        if not os.path.exists("TDSE_files/TDSE.h5"):
+            return 0,self.state
+        
+        
+        last_checkpoint = -1 
+        if os.path.exists("TDSE_files/TDSE.h5"):
+            with h5py.File("TDSE_files/TDSE.h5", "r") as f:
+                # Look for datasets of the form psi_integer
+                for key in f.keys():
+                    if key.startswith("psi_"):
+                        try:
+                            psi_index = int(key.split("_")[1])
+                            last_checkpoint= max(last_checkpoint, psi_index)
+                        except ValueError:
+                            continue
+        
+     
+    
+        checkpoint_state = PETSc.Vec().createMPI(self.parameters["total_size"],comm = PETSc.COMM_WORLD)
+        
+        with h5py.File(f'TDSE_files/TDSE.h5', 'r') as f:
+            data = f[f"/psi_{last_checkpoint}"][:]
+            real_part = data[:,0]
+            imaginary_part = data[:,1]
+            total = real_part + 1j*imaginary_part
+
+        global_indices = np.array(range(len(total)))
+        global_indices = global_indices.astype("int32")
+        checkpoint_state.setValues(global_indices,total)
+        checkpoint_state.assemble()
+        return last_checkpoint+1,checkpoint_state
+        
+
+        
+
     def propagateState(self,laserInstance):
         dt = self.parameters["box"]["time_spacing"]
         tolerance = self.parameters["TDSE"]["tolerance"]
         components = laserInstance.components
 
-        psi_initial = self.state
+        starting_idx,psi_initial = self.loadStartingState()
         initial_norm = self.computeNorm(psi_initial)
         if rank == 0:
             norm_file = open("TDSE_files/norms.txt","w")
             norm_file.write(f"Norm of Initial state: {initial_norm} \n")
             norm_file.close()
 
+        if starting_idx == 0:
+            # Starting from scratch
+            ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.WRITE, comm=PETSc.COMM_WORLD)
+        else:
+            # Resuming from a checkpoint
+            ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.APPEND, comm=PETSc.COMM_WORLD)
+
         Nt = len(laserInstance.t)
         Nt_post = len(laserInstance.t_post)
         Nt_total = Nt + Nt_post
 
         norm_indices = self.computeNormIndices(Nt_total)
+        checkpoint_indices = self.computeCheckpointIndices(Nt_total)
 
 
         ksp = PETSc.KSP().create(comm = PETSc.COMM_WORLD)
@@ -487,7 +535,7 @@ class Tdse:
             HHG_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
             laser_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
 
-        for idx in range(Nt_total):
+        for idx in range(starting_idx,Nt_total):
 
             if self.parameters["HHG"]:
                 if components[0]:
@@ -550,6 +598,10 @@ class Tdse:
                 norm_file = open("TDSE_files/norms.txt","a")
                 norm_file.write(f"Norm of state at step {idx}: {current_norm} \n")
                 norm_file.close()
+            
+            if idx in checkpoint_indices:
+                psi_initial.setName(f"psi_{idx}")
+                ViewHDF5.view(psi_initial)
 
             partial_L_copy.destroy()
             partial_R_copy.destroy()
@@ -566,8 +618,9 @@ class Tdse:
         if self.parameters["HHG"]:
             np.save("TDSE_files/HHG_data.npy",HHG_data)
             np.save("TDSE_files/laser_data.npy",laser_data)
-            
-        ViewHDF5 = PETSc.Viewer().createHDF5("TDSE.h5", mode=PETSc.Viewer.Mode.WRITE, comm= PETSc.COMM_WORLD)
+
+        ViewHDF5.destroy()
+        ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.WRITE, comm= PETSc.COMM_WORLD)
         psi_initial.setName("psi_final")
         ViewHDF5.view(psi_initial)
         ViewHDF5.destroy()
