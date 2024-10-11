@@ -450,38 +450,60 @@ class Tdse:
 
         return None
 
+    def computeNorm(self,state):
+        S_norm = self.S.createVecRight()
+        self.S.mult(state,S_norm)
+        prod = state.dot(S_norm)
+        S_norm.destroy()
+        return np.real(prod)
+
+    def computeNormIndices(self,Nt_total,num_of_indices = 100):
+        norm_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
+        return norm_indices
+
+    def addInteraction(self,partial_L, partial_R, t, dt, components, laserInstance):
+        if components[0] or components[1]:
+            A_tilde = (laserInstance.Ax_func(t + dt / 2) + 1j * laserInstance.Ay_func(t + dt / 2)) * 1j * dt / 2
+            A_tilde_star = (laserInstance.Ax_func(t + dt / 2) - 1j * laserInstance.Ay_func(t + dt / 2)) * 1j * dt / 2
+
+            partial_L.axpy(A_tilde, self.hamiltonians[1], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+            partial_R.axpy(-A_tilde, self.hamiltonians[1], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+
+            partial_L.axpy(A_tilde_star, self.hamiltonians[0], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+            partial_R.axpy(-A_tilde_star, self.hamiltonians[0], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+
+        if components[2]:
+            Az = laserInstance.Az_func(t + dt / 2) * 1j * dt / 2
+            partial_L.axpy(Az, self.hamiltonians[2], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+            partial_R.axpy(-Az, self.hamiltonians[2], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
+
     def propagateState(self,laserInstance):
         dt = self.parameters["box"]["time_spacing"]
-        polarization = self.parameters["lasers"]["polarization"]
+        tolerance = self.parameters["TDSE"]["tolerance"]
         components = laserInstance.components
 
         psi_initial = self.state
-
-        S_norm = self.S.createVecRight()
-        self.S.mult(psi_initial,S_norm)
-        prod = psi_initial.dot(S_norm)
-        S_norm.destroy()
-        
+        initial_norm = self.computeNorm(psi_initial)
         if rank == 0:
             norm_file = open("TDSE_files/norms.txt","w")
-            norm_file.write(f"Norm of Initial state: {np.real(prod)} \n")
+            norm_file.write(f"Norm of Initial state: {initial_norm} \n")
             norm_file.close()
-
-        total_iterations = len(laserInstance.total_time)
-        norm_indices = np.linspace(0, total_iterations - 1, num=100, dtype=int)
-
-
-        ksp = PETSc.KSP().create(comm = PETSc.COMM_WORLD)
-        ksp.setTolerances(rtol = self.parameters["TDSE"]["tolerance"])
 
         Nt = len(laserInstance.t)
         Nt_post = len(laserInstance.t_post)
+        Nt_total = Nt + Nt_post
+
+        norm_indices = self.computeNormIndices(Nt_total)
+
+
+        ksp = PETSc.KSP().create(comm = PETSc.COMM_WORLD)
+        ksp.setTolerances(rtol = tolerance)
 
         if self.parameters["HHG"]:
             HHG_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
             laser_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
 
-        for idx in range(total_iterations):
+        for idx in range(Nt_total):
 
             if self.parameters["HHG"]:
                 if components[0]:
@@ -506,87 +528,47 @@ class Tdse:
                     HHG_data[2,idx] = prodz
                     laser_data[2,idx] = laserInstance.Az_func(idx*dt)
 
-
-
-
             partial_L_copy = self.atomic_L.copy()
             partial_R_copy = self.atomic_R.copy()
 
+            known = partial_R_copy.createVecRight() 
+            solution = self.atomic_L.createVecRight()
+
             t = idx * dt
+
             if PETSc.COMM_WORLD.rank == 0:
-                    print(idx,total_iterations)
+                print(idx,Nt_total)
             if idx < Nt:
-                if components[0] or components[1]:
-                    A_tilde = (laserInstance.Ax_func(t+dt/2) + 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
-                    A_tilde_star = (laserInstance.Ax_func(t+dt/2) - 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
-                    
-                    partial_L_copy.axpy(A_tilde,self.hamiltonians[1],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-                    partial_R_copy.axpy(-A_tilde,self.hamiltonians[1],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-
-                    partial_L_copy.axpy(A_tilde_star,self.hamiltonians[0],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-                    partial_R_copy.axpy(-A_tilde_star,self.hamiltonians[0],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-
-                if components[2]:
-                    Az = laserInstance.Az_func(t+dt/2)*1j*dt/2
-                    partial_L_copy.axpy(Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-                    partial_R_copy.axpy(-Az,self.hamiltonians[2],structure = petsc4py.PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-
-
-                known = partial_R_copy.createVecRight() 
-                solution = partial_L_copy.createVecRight()
-                partial_R_copy.mult(psi_initial,known)
-
+                partial_L_copy = self.partial_L.copy()
+                partial_R_copy = self.partial_R.copy()
+                self.addInteraction(partial_L_copy, partial_R_copy, t, dt, components, laserInstance)
                 ksp.setOperators(partial_L_copy)
-                ksp.solve(known,solution)
-                solution.copy(psi_initial)
-
-                S_norm = self.S.createVecRight()
-                self.S.mult(psi_initial,S_norm)
-                prod = psi_initial.dot(S_norm)
-                S_norm.destroy()
-
-                if rank == 0 and idx in norm_indices:
-                    norm_file = open("TDSE_files/norms.txt","a")
-                    norm_file.write(f"Norm of state at step {idx}: {np.real(prod)} \n")
-                    norm_file.close()
-
+                partial_R_copy.mult(psi_initial, known)
                 partial_L_copy.destroy()
                 partial_R_copy.destroy()
-                known.destroy()
-                solution.destroy()
             else:
                 ksp.setOperators(self.atomic_L)
-
-                known = self.atomic_R.createVecRight()
-                solution = partial_L_copy.createVecRight()
                 self.atomic_R.mult(psi_initial, known)
+            
+            # Solve the linear system
+            ksp.solve(known, solution)
+            solution.copy(psi_initial)
+            known.destroy()
+            solution.destroy()
 
-                ksp.solve(known, solution)
-                solution.copy(psi_initial)
 
-                S_norm = self.S.createVecRight()
-                self.S.mult(psi_initial, S_norm)
-                prod = psi_initial.dot(S_norm)
-                S_norm.destroy()
 
-                if rank == 0 and idx in norm_indices:
-                    norm_file = open("TDSE_files/norms.txt","a")
-                    norm_file.write(f"Norm of state at step {idx}: {np.real(prod)} \n")
-                    norm_file.close()
+            current_norm = self.computeNorm(psi_initial)
+            if rank == 0 and idx in norm_indices:
+                norm_file = open("TDSE_files/norms.txt","a")
+                norm_file.write(f"Norm of state at step {idx}: {current_norm} \n")
+                norm_file.close()
 
-                partial_L_copy.destroy()
-                partial_R_copy.destroy()
-                known.destroy()
-                solution.destroy()
-
-        S_norm = self.S.createVecRight()
-        self.S.mult(psi_initial,S_norm)
-        prod = psi_initial.dot(S_norm)
-        S_norm.destroy()
-        self.S.destroy()
+               
+        final_norm = self.computeNorm(psi_initial)
 
         if rank == 0:
-            print(f"Norm of Final State:{np.real(prod)}")
+            print(f"Norm of Final State:{final_norm}")
 
         if self.parameters["HHG"]:
             np.save("TDSE_files/HHG_data.npy",HHG_data)
