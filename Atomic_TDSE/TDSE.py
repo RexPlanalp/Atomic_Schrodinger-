@@ -461,22 +461,6 @@ class Tdse:
         norm_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
         return norm_indices
 
-    def addInteraction(self,partial_L, partial_R, t, dt, components, laserInstance):
-        if components[0] or components[1]:
-            A_tilde = (laserInstance.Ax_func(t + dt / 2) + 1j * laserInstance.Ay_func(t + dt / 2)) * 1j * dt / 2
-            A_tilde_star = (laserInstance.Ax_func(t + dt / 2) - 1j * laserInstance.Ay_func(t + dt / 2)) * 1j * dt / 2
-
-            partial_L.axpy(A_tilde, self.hamiltonians[1], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-            partial_R.axpy(-A_tilde, self.hamiltonians[1], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-
-            partial_L.axpy(A_tilde_star, self.hamiltonians[0], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-            partial_R.axpy(-A_tilde_star, self.hamiltonians[0], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-
-        if components[2]:
-            Az = laserInstance.Az_func(t + dt / 2) * 1j * dt / 2
-            partial_L.axpy(Az, self.hamiltonians[2], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-            partial_R.axpy(-Az, self.hamiltonians[2], structure=PETSc.Mat.Structure.DIFFERENT_NONZERO_PATTERN)
-
     def propagateState(self,laserInstance):
         dt = self.parameters["box"]["time_spacing"]
         tolerance = self.parameters["TDSE"]["tolerance"]
@@ -571,7 +555,7 @@ class Tdse:
             partial_R_copy.destroy()
             known.destroy()
             solution.destroy()
-          
+            
 
                
         final_norm = self.computeNorm(psi_initial)
