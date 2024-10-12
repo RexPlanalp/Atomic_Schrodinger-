@@ -9,7 +9,7 @@ comm = PETSc.COMM_WORLD
 rank = comm.rank
 
 
-def lm_expansion(lmax, state, components):
+def lm_expansion(lmax,mmin,mmax,expansion, state, components):
     delta_l = [1, -1]
     delta_m = []
     if components[0] or components[1]:
@@ -18,7 +18,12 @@ def lm_expansion(lmax, state, components):
         delta_m.append(0)
 
     def is_valid(l, m):
-        return 0 <= l <= lmax and -l <= m <= l
+        if expansion == "default":
+            return 0 <= l <= lmax and -l <= m <= l and mmin <= m <= mmax
+        elif expansion == "RHC":
+            return 0 <= l <= lmax and -l <= m <= l and mmin <= m <= mmax and l == m
+        elif expansion == "LHC":
+            return 0 <= l <= lmax and -l <= m <= l and mmin <= m <= mmax and l == -m
 
     # Extract initial l and m from state
     initial_l, initial_m = state[1], state[2]

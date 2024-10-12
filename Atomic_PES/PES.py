@@ -48,7 +48,7 @@ class PES:
         components = [(1 if polarization[i] != 0 or ell * ellipticity_Vector[i] != 0 else 0) for i in range(3)]
 
         
-        self.lm_dict,self.block_dict = utility.lm_expansion(self.parameters["lm"]["lmax"], \
+        self.lm_dict,self.block_dict = utility.lm_expansion(self.parameters["lm"]["lmax"],self.parameters["lm"]["mmin"],self.parameters["lm"]["mmax"],self.parameters["lm"]["expansion"], \
                                                             self.parameters["state"], \
                                                                 components)
         self.parameters["total_size"] = len(self.lm_dict) * self.parameters["splines"]["n_basis"]
