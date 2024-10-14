@@ -5,7 +5,7 @@
 #SBATCH --ntasks 32
 #SBATCH --mem=32G
 #SBATCH -o run.log 
-#SBATCH -t 0-01:00:00
+#SBATCH -t 0-09:00:00
 
 #SBATCH --exclude=node73
 

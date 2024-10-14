@@ -5,7 +5,7 @@
 #SBATCH --ntasks 1
 #SBATCH --mem=164G
 #SBATCH -o run.log 
-#SBATCH -t 0-07:00:00
+#SBATCH -t 3-00:00:00
 
 REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/Atomic_PES"
                                                                
