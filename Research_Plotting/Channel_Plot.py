@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 #Ip = -0.5791546178 # Ionization potential of species in atomic units
 Ip = -0.5
 N = 10 # Numbe08r of cycles of laser pulse 
-w = 0.057 * 800/1600
-I = 2e14 / 3.51E16 # Intensity of laser pulse in atomic units
+w = 0.057 * 800/400
+I = 5.2e14 / 3.51E16 # Intensity of laser pulse in atomic units
 E = 1 # Energy in atomic units (usually at ATI peak)
 
 
@@ -20,8 +20,8 @@ Up = I_profile/(4*w**2) # Pondermotive energy in atomic units
 
 
 
-minimum_energy = (-Ip + np.max(Up))
-print("Predicted maximum lmax for expansion ", minimum_energy)
+#minimum_energy = (-Ip + np.max(Up))
+#print("Predicted maximum lmax for expansion ", minimum_energy)
 ############################################################################################################################
 
 def findPhotons(E,Ip,Up,w):
