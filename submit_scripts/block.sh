@@ -14,6 +14,8 @@ REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/General_Plotting"
 hostname
 pwd
 
-mpiexec -n $SLURM_NTASKS python $REPO_DIR/Block_Plot.py $1 >> results.log
+mpiexec -n $SLURM_NTASKS python $REPO_DIR/Block_Plot.py $1 $2 >> results.log
+
+
 
 
