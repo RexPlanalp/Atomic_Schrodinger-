@@ -84,6 +84,7 @@ if SLICE == "XY":
     viridis = plt.get_cmap('viridis')  # Get the viridis colormap
     smallest_color = viridis(0)  # Get the smallest color from the colormap
 
+    print("TEST")
 
     ax.set_facecolor(smallest_color)
     if LOG:
@@ -94,9 +95,8 @@ if SLICE == "XY":
     ax.set_xlabel("kx")
     ax.set_ylabel("ky")
     fig.colorbar(sc, ax=ax)
-    
     plt.savefig("images/PAD.png")
-elif SLICE == "XY":
+elif SLICE == "XZ":
     fig, ax = plt.subplots()  # Create a figure and axes
     viridis = plt.get_cmap('viridis')  # Get the viridis colormap
     smallest_color = viridis(0)  # Get the smallest color from the colormap
@@ -111,7 +111,7 @@ elif SLICE == "XY":
     ax.set_xlabel("kz")
     ax.set_ylabel("kx")
     fig.colorbar(sc, ax=ax)
-    
+    print("TEST")
     plt.savefig("images/PAD.png")
 
 

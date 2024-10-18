@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pyshtools as pysh
 
 import h5py
 import sys
@@ -13,7 +14,7 @@ from numpy import exp
 from numpy import sqrt
 
 from scipy.special import sph_harm
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.sparse import csr_matrix
 
 sys.path.append('/users/becker/dopl4670/Research/Atomic_Schrodinger/Common')
@@ -91,6 +92,9 @@ class PES:
     def __repr__(self):
         return f"PES({self.input_file})"
     
+    def ylm(self,l,m,theta,phi):
+        return pysh.expand.spharm_lm(l,m,theta,phi, kind = 'complex', degrees = False,csphase = -1,normalization = "ortho")
+
     def loadS_R(self):
 
         n_basis = self.parameters["splines"]["n_basis"]
@@ -236,6 +240,12 @@ class PES:
             self.final_state_cont_pos[start_idx:end_idx] = wavefunction
 
     def compute_partial_spectra(self):
+        if os.path.exists('PES_files/partial_spectra.pkl'):
+            return
+         
+         
+
+
         self.partial_spectra = {}
         self.phases = {}
 
@@ -249,7 +259,7 @@ class PES:
             for (l, m), block_idx in self.lm_dict.items():
                 block = self.final_state_cont_pos[block_idx * self.Nr:(block_idx + 1) * self.Nr]
                 y = waves[l].conj() * block
-                inner_product = simps(y, self.r_range)
+                inner_product = simpson(y=y, x=self.r_range)
                 # Append the inner product to the list for each (l, m)
                 self.partial_spectra[(l, m)].append(inner_product)
                 if (E, l) not in self.phases:
@@ -263,8 +273,15 @@ class PES:
             pickle.dump(self.phases, pickle_file)
 
     def compute_angle_integrated(self):
+        if os.path.exists('PES_files/partial_spectra.pkl'):
+            with open('PES_files/partial_spectra.pkl', 'rb') as file:
+                partial_spectra = pickle.load(file)
+        else:
+            partial_spectra = self.partial_spectra
+
+
         PES = 0
-        for key, value in self.partial_spectra.items():
+        for key, value in partial_spectra.items():
             PES += np.abs(value)**2
         PES /= (2*np.pi)**3
 
@@ -274,6 +291,14 @@ class PES:
         return None
     
     def compute_angle_resolved(self):
+
+        if os.path.exists('PES_files/partial_spectra.pkl'):
+            with open('PES_files/partial_spectra.pkl', 'rb') as file:
+                partial_spectra = pickle.load(file)
+            with open('PES_files/phases.pkl', 'rb') as file:
+                phases = pickle.load(file)
+        else:
+            partial_spectra = self.partial_spectra
   
 
         k_range = np.sqrt(2 * self.E_range)
@@ -294,9 +319,9 @@ class PES:
 
         # Precompute sph_harm for all combinations of l, m over the theta and phi grids
         sph_harm_values = {}
-        for (l, m), _ in self.partial_spectra.items():
+        for (l, m), _ in partial_spectra.items():
             # sph_harm takes vectorized phi and theta
-            sph_harm_values[(l, m)] = sph_harm(m, l, phi_vals, theta_vals)
+            sph_harm_values[(l, m)] = self.ylm(l, m, theta_vals, phi_vals)
 
         # Number of k values and grid points
         N_k = len(k_range)
@@ -318,9 +343,9 @@ class PES:
             pad_amp = np.zeros(N_points, dtype=complex)
 
             # Sum over all l, m contributions
-            for (l, m), value in self.partial_spectra.items():
+            for (l, m), value in partial_spectra.items():
                 sph = sph_harm_values[(l, m)]
-                phase_factor = (-1j) ** l * np.exp(1j * self.phases[(E, l)]) * value[E_idx]
+                phase_factor = (-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx]
                 pad_amp += phase_factor * sph
 
             # Compute the squared magnitude of pad_amp
