@@ -274,51 +274,71 @@ class PES:
         return None
     
     def compute_angle_resolved(self):
+  
+
         k_range = np.sqrt(2 * self.E_range)
 
         if self.parameters["SLICE"] == "XZ":
-            theta_range = np.arange(0,np.pi,0.01)
-            phi_range = np.array([0,np.pi])
+            theta_range = np.arange(0, np.pi, 0.01)
+            phi_range = np.array([0, np.pi])
 
         elif self.parameters["SLICE"] == "XY":
-            theta_range = np.array([np.pi/2])
-            phi_range = np.arange(0,2*np.pi,0.01)
+            theta_range = np.array([np.pi / 2])
+            phi_range = np.arange(0, 2 * np.pi, 0.01)
 
-        k_vals = []
-        theta_vals = []
-        phi_vals = []
-        pad_vals = []
+        # Create theta and phi grids
+        theta_grid, phi_grid = np.meshgrid(theta_range, phi_range, indexing='ij')
+        # Flatten the grids for vectorized computation
+        theta_vals = theta_grid.flatten()
+        phi_vals = phi_grid.flatten()
 
+        # Precompute sph_harm for all combinations of l, m over the theta and phi grids
+        sph_harm_values = {}
+        for (l, m), _ in self.partial_spectra.items():
+            # sph_harm takes vectorized phi and theta
+            sph_harm_values[(l, m)] = sph_harm(m, l, phi_vals, theta_vals)
+
+        # Number of k values and grid points
+        N_k = len(k_range)
+        N_points = len(theta_vals)
+
+        # Initialize arrays to store the results
+        pad_vals = np.zeros((N_k, N_points))
+        k_vals = np.repeat(k_range[:, np.newaxis], N_points, axis=1)  # Shape (N_k, N_points)
+
+        # Loop over k values
         for i, k in enumerate(k_range):
             E = self.E_range[i]
-            print(E)
+            print(f"Processing energy: {E}")
             if k == 0:
                 continue
-            E_idx = np.argmin(np.abs(k_range - k))
-            for t in theta_range:
-                for p in phi_range:
+            E_idx = i  # Assuming k_range and E_range are aligned
 
-                    k_vals.append(k)
-                    theta_vals.append(t)
-                    phi_vals.append(p)
+            # Initialize pad_amp as a zero array with the same length as theta_vals
+            pad_amp = np.zeros(N_points, dtype=complex)
 
-                    pad_amp = 0
-                    for key, value in self.partial_spectra.items():
-                        
-                        l,m = key
-                    
-                        pad_amp += (-1j)**l * np.exp(1j*self.phases[(E,l)]) * sph_harm(m, l, p, t) * value[E_idx]
-                    pad_vals.append(np.abs(pad_amp)**2)
+            # Sum over all l, m contributions
+            for (l, m), value in self.partial_spectra.items():
+                sph = sph_harm_values[(l, m)]
+                phase_factor = (-1j) ** l * np.exp(1j * self.phases[(E, l)]) * value[E_idx]
+                pad_amp += phase_factor * sph
 
-        k_vals = np.array(k_vals)
-        theta_vals = np.array(theta_vals)
-        phi_vals = np.array(phi_vals)
-        pad_vals = np.array(pad_vals)
+            # Compute the squared magnitude of pad_amp
+            pad_vals[i, :] = np.abs(pad_amp) ** 2
 
-        pad_vals /= (2*np.pi)**3
+        # Adjust pad_vals
+        pad_vals /= (2 * np.pi) ** 3
         pad_vals /= k_vals
 
-        PAD = np.vstack((k_vals,theta_vals,phi_vals,pad_vals))
+        # Flatten arrays for saving
+        k_vals_flat = k_vals.flatten()
+        pad_vals_flat = pad_vals.flatten()
+        theta_vals_repeated = np.tile(theta_vals, N_k)
+        phi_vals_repeated = np.tile(phi_vals, N_k)
+
+        # Stack and save the data
+        PAD = np.vstack((k_vals_flat, theta_vals_repeated, phi_vals_repeated, pad_vals_flat))
         np.save("PES_files/PAD.npy", PAD)
 
         return None
+
