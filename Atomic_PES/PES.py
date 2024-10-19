@@ -210,34 +210,67 @@ class PES:
             psi_final_bspline = real_part + 1j * imaginary_part
         self.final_state = psi_final_bspline
 
-    def expand_final_state(self,basisInstance):
+    # def expand_final_state(self,basisInstance):
+    #     n_block = self.parameters["n_block"]
+    #     n_basis = self.parameters["splines"]["n_basis"]
+    #     order = self.parameters["splines"]["order"]
+    #     knots = basisInstance.knots
+
+
+    #     self.final_state_cont_pos = np.zeros(self.Nr*n_block, dtype=np.complex128)
+    #     for (l,m),block_idx in self.lm_dict.items():
+    #         block = self.final_state_cont[block_idx*n_basis:(block_idx+1)*n_basis]
+    #         wavefunction = np.zeros_like(self.r_range,dtype=complex)
+
+    #         for i in range(n_basis):
+                
+    #             start = knots[i]
+    #             end = knots[i + order]
+                
+                
+    #             valid_indices = np.where((self.r_range >= start) & (self.r_range < end))[0]
+                
+    #             if valid_indices.size > 0:
+                    
+    #                 wavefunction[valid_indices] += block[i] * basisInstance.B(i, order, self.r_range[valid_indices], knots)
+    #         start_idx = block_idx * len(self.r_range)
+    #         end_idx = (block_idx + 1) * len(self.r_range)
+            
+        
+    #         self.final_state_cont_pos[start_idx:end_idx] = wavefunction
+
+    def expand_final_state(self, basisInstance):
         n_block = self.parameters["n_block"]
         n_basis = self.parameters["splines"]["n_basis"]
         order = self.parameters["splines"]["order"]
         knots = basisInstance.knots
+        Nr = len(self.r_range)
 
+        # Initialize the final state array
+        self.final_state_cont_pos = np.zeros(self.Nr * n_block, dtype=np.complex128)
 
-        self.final_state_cont_pos = np.zeros(self.Nr*n_block, dtype=np.complex128)
-        for (l,m),block_idx in self.lm_dict.items():
-            block = self.final_state_cont[block_idx*n_basis:(block_idx+1)*n_basis]
-            wavefunction = np.zeros_like(self.r_range,dtype=complex)
+        # Loop over each B-spline index `i`
+        for i in range(n_basis):
+            start = knots[i]
+            end = knots[i + order]
 
-            for i in range(n_basis):
-                
-                start = knots[i]
-                end = knots[i + order]
-                
-                
-                valid_indices = np.where((self.r_range >= start) & (self.r_range < end))[0]
-                
-                if valid_indices.size > 0:
-                    
-                    wavefunction[valid_indices] += block[i] * basisInstance.B(i, order, self.r_range[valid_indices], knots)
-            start_idx = block_idx * len(self.r_range)
-            end_idx = (block_idx + 1) * len(self.r_range)
-            
-        
-            self.final_state_cont_pos[start_idx:end_idx] = wavefunction
+            # Find the indices where the B-spline is non-zero
+            valid_indices = np.where((self.r_range >= start) & (self.r_range < end))[0]
+            if valid_indices.size > 0:
+                # Evaluate the B-spline once for these indices
+                y = basisInstance.B(i, order, self.r_range[valid_indices], knots)
+
+                # Loop over each block `(l, m)`
+                for (l, m), block_idx in self.lm_dict.items():
+                    # Extract the coefficient for this B-spline in the current block
+                    block = self.final_state_cont[block_idx * n_basis:(block_idx + 1) * n_basis]
+                    coef = block[i]
+
+                    # Compute the starting index in the flattened array
+                    start_idx = block_idx * Nr
+
+                    # Update the wavefunction for this block
+                    self.final_state_cont_pos[start_idx + valid_indices] += coef * y
 
     def compute_partial_spectra(self):
         if os.path.exists('PES_files/partial_spectra.pkl'):

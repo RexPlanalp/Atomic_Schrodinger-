@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 Ip = 0.5
 N = 10
-wavelength = 400
+wavelength = 800
 w = 0.057 * 800/wavelength
-I = 2e14 / 3.51E16
+I = 5.2e13 / 3.51E16
 
 tau = 2*np.pi/w
 t = np.linspace(0,tau,1000)
