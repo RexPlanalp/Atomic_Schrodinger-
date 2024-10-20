@@ -5,7 +5,6 @@ import pickle
 
 from scipy.special import sph_harm
 import matplotlib.colors as mcolors
-from tqdm import tqdm
 import sys
 
 # Load partial spectra and phases
@@ -53,7 +52,7 @@ if "SLICE" in sys.argv:
         total_phases[(l, m)] = np.angle((-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx])
 
     # Loop over phi to compute the asymmetry
-    for phi in tqdm(phi_range):
+    for phi in phi_range:
 
         phi_vals.append(phi)
         

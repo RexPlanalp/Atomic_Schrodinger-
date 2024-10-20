@@ -14,7 +14,9 @@ with open(file_path, 'r') as file:
 
 SLICE = input_data["SLICE"]
 
-LOG = "LOG" in sys.argv
+LOG_PES = "LOG" == sys.argv[1]
+LOG_PAD = "LOG" == sys.argv[2]
+
 PEAKS  = "PEAKS" in sys.argv
 
 
@@ -33,7 +35,7 @@ PES = np.real(np.load("PES_files/PES.npy"))
 PAD = np.real(np.load("PES_files/PAD.npy"))
 
 
-if LOG:
+if LOG_PES:
     plt.figure()
     plt.semilogy(E_range,PES,color = "k")
     plt.xlabel("Energy (au)")
@@ -79,39 +81,38 @@ kz_vals = k_vals * np.cos(theta_vals)
 max = np.max(np.real(pad_vals))
 min = np.max(np.real(pad_vals))*10**-6
 
+cmap = "plasma"
+
 if SLICE == "XY":
     fig, ax = plt.subplots()  # Create a figure and axes
-    viridis = plt.get_cmap('viridis')  # Get the viridis colormap
-    smallest_color = viridis(0)  # Get the smallest color from the colormap
-
+    cmap_gradient = plt.get_cmap(cmap)  # Get the viridis colormap
+    smallest_color = cmap_gradient(0)  # Get the smallest color from the colormap
 
     ax.set_facecolor(smallest_color)
-    if LOG:
-        sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap="viridis",norm=mcolors.LogNorm(vmin=min,vmax=max))
+    if LOG_PAD:
+        sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap=cmap,norm=mcolors.LogNorm(vmin=min,vmax=max))
     else:
-        sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap="viridis")
+        sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap=cmap)
     ax.set_aspect('equal', adjustable='box')
     ax.set_xlabel("kx")
     ax.set_ylabel("ky")
     fig.colorbar(sc, ax=ax)
-    
     plt.savefig("images/PAD.png")
-elif SLICE == "XY":
+elif SLICE == "XZ":
     fig, ax = plt.subplots()  # Create a figure and axes
-    viridis = plt.get_cmap('viridis')  # Get the viridis colormap
-    smallest_color = viridis(0)  # Get the smallest color from the colormap
+    cmap_gradient = plt.get_cmap(cmap)  # Get the viridis colormap
+    smallest_color = cmap_gradient(0) 
 
 
     ax.set_facecolor(smallest_color)
-    if LOG:
-        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap="viridis",norm=mcolors.LogNorm(vmin=min,vmax=max))
+    if LOG_PAD:
+        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap,norm=mcolors.LogNorm(vmin=min,vmax=max))
     else:
-        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap="viridis")
+        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap)
     ax.set_aspect('equal', adjustable='box')
     ax.set_xlabel("kz")
     ax.set_ylabel("kx")
     fig.colorbar(sc, ax=ax)
-    
     plt.savefig("images/PAD.png")
 
 

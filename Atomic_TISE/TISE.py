@@ -101,7 +101,7 @@ class Tise:
         return f"TISE({self.input_file})"
     
     def _solveEigenvalueProblem(self,H,S,num_of_states):
-        E = SLEPc.EPS().create()
+        E = SLEPc.EPS().create(comm = PETSc.COMM_WORLD)
         E.setOperators(H,S)
         E.setDimensions(nev=num_of_states)
         E.setProblemType(SLEPc.EPS.ProblemType.GNHEP)
