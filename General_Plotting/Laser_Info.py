@@ -18,8 +18,11 @@ Up = I_profile/(4*w**2)
 E = 0.195
 
 def print_direct_cutoff():
-    energy = Ip + 2*np.max(Up)
+    energy = 2*np.max(Up)
     print(f"Direct cutoff energy is {energy}")
+def print_rescattering_cutoff():
+    energy = 10*np.max(Up)
+    print(f"Rescattering cutoff energy is {energy}")
 def print_keldysh_parameter():
     gamma = np.sqrt(Ip/(2*np.max(Up)))
     print(f"Keldysh parameter is {gamma}")
@@ -46,6 +49,8 @@ def plot_channels(n):
             
 if __name__ == "__main__":
     print_direct_cutoff()
+    print("\n")
+    print_rescattering_cutoff()
     print("\n")
     print_keldysh_parameter()
     print("\n")
