@@ -80,6 +80,10 @@ class laser:
             plt.clf()
 
             np.save("TDSE_files/t_total.npy",self.total_time)
+        if rank == 0 and self.components[0] and self.components[1]:
+            plt.plot(self.Ax_func(self.total_time),self.Ay_func(self.total_time))
+            plt.savefig("images/laser_xy.png")
+            plt.clf()
     
         
         

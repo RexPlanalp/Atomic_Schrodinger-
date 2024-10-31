@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 Ip = 0.5
 N = 10
-wavelength = 800
+wavelength = 400
 w = 0.057 * 800/wavelength
-I = 5.2e13 / 3.51E16
+I = 2.0e14 / 3.51E16
 
 tau = 2*np.pi/w
 t = np.linspace(0,tau,1000)
@@ -44,6 +44,7 @@ def plot_channels(n):
         plt.axhline(y_int,linestyle="dashed")
 
     plt.plot(t,n)
+    print("Largest Channel:",np.max(n))
     plt.savefig("images/channels.png")
     plt.clf()
             

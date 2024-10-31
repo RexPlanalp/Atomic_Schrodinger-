@@ -78,25 +78,31 @@ kx_vals = k_vals* np.sin(theta_vals) * np.cos(phi_vals)
 ky_vals = k_vals * np.sin(theta_vals) * np.sin(phi_vals)
 kz_vals = k_vals * np.cos(theta_vals)
 
-max = np.max(np.real(pad_vals))
-min = np.max(np.real(pad_vals))*10**-6
+max_val = np.max(np.real(pad_vals))
+min_val = np.max(np.real(pad_vals))*10**-2
 
 cmap = "plasma"
 
 if SLICE == "XY":
     fig, ax = plt.subplots()  # Create a figure and axes
-    cmap_gradient = plt.get_cmap(cmap)  # Get the viridis colormap
-    smallest_color = cmap_gradient(0)  # Get the smallest color from the colormap
+    cmap_gradient = plt.get_cmap(cmap)  # Get the chosen colormap
 
+    # Set normalization based on LOG_PAD and actual min/max values
+    norm = mcolors.LogNorm(vmin=min_val, vmax=max_val) if LOG_PAD else mcolors.Normalize(vmin=min_val, vmax=max_val)
+
+    # Get the smallest color in the colormap actually used by the data
+    smallest_color = cmap_gradient(norm(min_val))
     ax.set_facecolor(smallest_color)
-    if LOG_PAD:
-        sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap=cmap,norm=mcolors.LogNorm(vmin=min,vmax=max))
-    else:
-        sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap=cmap)
+
+    # Create the scatter plot with appropriate normalization
+    sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap=cmap, norm=norm)
+    
+    # Additional plot settings
     ax.set_aspect('equal', adjustable='box')
     ax.set_xlabel("kx")
     ax.set_ylabel("ky")
     fig.colorbar(sc, ax=ax)
+
     plt.savefig("images/PAD.png")
 elif SLICE == "XZ":
     fig, ax = plt.subplots()  # Create a figure and axes
@@ -106,7 +112,7 @@ elif SLICE == "XZ":
 
     ax.set_facecolor(smallest_color)
     if LOG_PAD:
-        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap,norm=mcolors.LogNorm(vmin=min,vmax=max))
+        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap,norm=mcolors.LogNorm(vmin=min_val,vmax=max_val))
     else:
         sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap)
     ax.set_aspect('equal', adjustable='box')

@@ -146,7 +146,7 @@ class PES:
         probs = []
         ls = []
         for (l, m), block_index in lm_dict.items():
-            if l != m+2:
+            if l != m:
                 continue
             wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
 

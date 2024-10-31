@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 #Ip = -0.5791546178 # Ionization potential of species in atomic units
 Ip = -0.5
 N = 10 # Numbe08r of cycles of laser pulse 
-w = 0.057 * 800/800
+w = 0.057 * 800/1200
 I = 2e14 / 3.51E16 # Intensity of laser pulse in atomic units
-E = 1.4 # Energy in atomic units (usually at ATI peak)
+E = 1.069 # Energy in atomic units (usually at ATI peak)
 
 
 

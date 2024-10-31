@@ -3,9 +3,13 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-from scipy.special import sph_harm
 import matplotlib.colors as mcolors
 import sys
+
+import pyshtools as pysh
+def ylm(l,m,theta,phi):
+    return pysh.expand.spharm_lm(l,m,theta,phi, kind = 'complex', degrees = False,csphase = -1,normalization = "ortho")
+
 
 # Load partial spectra and phases
 with open('PES_files/partial_spectra.pkl', 'rb') as file:
@@ -28,7 +32,7 @@ if "SLICE" in sys.argv:
     E_target = float(sys.argv[2])  # The target energy
     theta = np.pi / 2  # Fixed theta = pi/2
     phi_range = np.arange(0, 2 * np.pi, 0.01)  # Range of phi values
-    lm_vals = [(26,26),(25,25),(24,24),(23,23),(22,22),(21,21)]
+    lm_vals = [(l,m) for l,m in partial_spectra.keys()]
 
 
     # Find the closest energy index to E = 0.48
@@ -53,6 +57,7 @@ if "SLICE" in sys.argv:
 
     # Loop over phi to compute the asymmetry
     for phi in phi_range:
+        print(phi)
 
         phi_vals.append(phi)
         
@@ -66,8 +71,8 @@ if "SLICE" in sys.argv:
                 continue
             
         
-            pad_amp += total_amplitues[key] * np.exp(1j*total_phases[key]) * sph_harm(m, l, phi, np.pi / 2) 
-            pad_amp_opp += total_amplitues[key] * np.exp(1j*total_phases[key]) * sph_harm(m, l, phi+np.pi, np.pi / 2) 
+            pad_amp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,phi,np.pi/2) 
+            pad_amp_opp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,phi+np.pi,np.pi/2) 
         
         # Compute the photoelectron angular distributions
         pad_val = np.abs(pad_amp) ** 2
@@ -128,7 +133,7 @@ if "TOTAL" in sys.argv:
     plt.clf()
 
     plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr",vmin = -1,vmax = 1)
-    plt.xlim([0,0.8])
+    plt.xlim([0,2])
     plt.colorbar()
     plt.savefig("images/A_rect.png")
 
