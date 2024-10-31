@@ -461,7 +461,7 @@ class Tdse:
         norm_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
         return norm_indices
 
-    def computeCheckpointIndices(self,Nt_total,num_of_indices = 4):
+    def computeCheckpointIndices(self,Nt_total,num_of_indices = 8):
         checkpoint_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
         return checkpoint_indices
 
