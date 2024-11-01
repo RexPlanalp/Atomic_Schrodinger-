@@ -71,8 +71,8 @@ if "SLICE" in sys.argv:
                 continue
             
         
-            pad_amp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,phi,np.pi/2) 
-            pad_amp_opp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,phi+np.pi,np.pi/2) 
+            pad_amp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,np.pi/2,phi) 
+            pad_amp_opp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,np.pi/2,phi+np.pi) 
         
         # Compute the photoelectron angular distributions
         pad_val = np.abs(pad_amp) ** 2
