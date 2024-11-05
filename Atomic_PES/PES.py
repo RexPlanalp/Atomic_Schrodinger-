@@ -157,45 +157,64 @@ class PES:
             # Update the block in psi_final_bspline with the modified wavefunction
             self.final_state_cont[block_idx * n_basis:(block_idx + 1) * n_basis] = wavefunction_block
 
-    def compute_coulomb_waves_and_phases(self,E):
+    def compute_coulomb_waves_and_phases(self, E):
         r_range2 = self.r_range ** 2
         dr = self.r_range[1] - self.r_range[0]
         dr2 = dr * dr
 
         lmax = self.parameters["lm"]["lmax"]
-        # Assuming l values range from 0 to lmax
         l_values = np.arange(0, lmax + 1)
         l_term = l_values * (l_values + 1)  # Shape (num_l,)
         k = np.sqrt(2 * E)
 
-        # Prepare potential array, replicate for each l
+        # Prepare potential array and replicate for each l
         potential = np.empty_like(self.r_range)
-        potential[0] = np.inf  # Set the potential at r=0 to avoid division by zero.
+        potential[0] = np.inf  # Avoid division by zero at r=0
         potential[1:] = self.pot_func(self.r_range[1:])
-
-        # Vectorize potential to shape (num_l, len(r_range))
         potential = np.broadcast_to(potential, (l_values.size, self.r_range.size))
 
         # Initialize Coulomb wave array for all l values
         coul_wave = np.zeros((l_values.size, self.r_range.size))
-        coul_wave[:, 0] = self.r_range[0]** (l_values + 1)  # Initialize first point for all l values
+        coul_wave[:, 0] = 1  # Initialize first point for all l values
 
         # Adjust initialization for the second point
-        coul_wave[:, 1] = coul_wave[:, 0] * (dr2 * (l_term / r_range2[1] + 2 * potential[:, 1] + 2 * E) + 2)
+        coul_wave[:, 1] = coul_wave[:, 0] * (
+            dr2 * (l_term / r_range2[1] + 2 * potential[:, 1] + 2 * E) + 2
+        )
 
         # Compute wave function values in a vectorized manner
         for idx in range(2, len(self.r_range)):
-            term = dr2 * (l_term / r_range2[idx - 1] + 2 * potential[:, idx - 1] - 2 * E)
-            coul_wave[:, idx] = coul_wave[:, idx - 1] * (term + 2) - coul_wave[:, idx - 2]
+            term = dr2 * (
+                l_term / r_range2[idx - 1] + 2 * potential[:, idx - 1] - 2 * E
+            )
+            coul_wave[:, idx] = (
+                coul_wave[:, idx - 1] * (term + 2) - coul_wave[:, idx - 2]
+            )
+
+            # Overflow catch for each l value
+            overflow_indices = np.abs(coul_wave[:, idx]) > 1E10
+            if np.any(overflow_indices):
+                coul_wave[overflow_indices] /= np.max(np.abs(coul_wave[overflow_indices, idx]))
 
         # Final values and phase computation
         r_val = self.r_range[-2]
         coul_wave_r = coul_wave[:, -2]
         dcoul_wave_r = (coul_wave[:, -1] - coul_wave[:, -3]) / (2 * dr)
 
-        norm = np.sqrt(np.abs(coul_wave_r) ** 2 + (np.abs(dcoul_wave_r) / (k + 1 / (k * r_val))) ** 2)
-        phase = np.angle((1.j * coul_wave_r + dcoul_wave_r / (k + 1 / (k * r_val))) /
-                        (2 * k * r_val) ** (1.j / k)) - k * r_val + l_values * np.pi / 2
+        norm = np.sqrt(
+            np.abs(coul_wave_r) ** 2
+            + (np.abs(dcoul_wave_r) / (k + 1 / (k * r_val))) ** 2
+        )
+        phase = (
+            np.angle(
+                (
+                    1j * coul_wave_r + dcoul_wave_r / (k + 1 / (k * r_val))
+                )
+                / (2 * k * r_val) ** (1j / k)
+            )
+            - k * r_val
+            + l_values * np.pi / 2
+        )
 
         # Normalize Coulomb wave functions
         coul_wave /= norm[:, np.newaxis]
@@ -210,35 +229,7 @@ class PES:
             psi_final_bspline = real_part + 1j * imaginary_part
         self.final_state = psi_final_bspline
 
-    # def expand_final_state(self,basisInstance):
-    #     n_block = self.parameters["n_block"]
-    #     n_basis = self.parameters["splines"]["n_basis"]
-    #     order = self.parameters["splines"]["order"]
-    #     knots = basisInstance.knots
-
-
-    #     self.final_state_cont_pos = np.zeros(self.Nr*n_block, dtype=np.complex128)
-    #     for (l,m),block_idx in self.lm_dict.items():
-    #         block = self.final_state_cont[block_idx*n_basis:(block_idx+1)*n_basis]
-    #         wavefunction = np.zeros_like(self.r_range,dtype=complex)
-
-    #         for i in range(n_basis):
-                
-    #             start = knots[i]
-    #             end = knots[i + order]
-                
-                
-    #             valid_indices = np.where((self.r_range >= start) & (self.r_range < end))[0]
-                
-    #             if valid_indices.size > 0:
-                    
-    #                 wavefunction[valid_indices] += block[i] * basisInstance.B(i, order, self.r_range[valid_indices], knots)
-    #         start_idx = block_idx * len(self.r_range)
-    #         end_idx = (block_idx + 1) * len(self.r_range)
-            
-        
-    #         self.final_state_cont_pos[start_idx:end_idx] = wavefunction
-
+   
     def expand_final_state(self, basisInstance):
         n_block = self.parameters["n_block"]
         n_basis = self.parameters["splines"]["n_basis"]
