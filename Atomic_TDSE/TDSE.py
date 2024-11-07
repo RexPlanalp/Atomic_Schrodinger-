@@ -568,9 +568,6 @@ class Tdse:
 
             t = idx * dt
 
-            if PETSc.COMM_WORLD.rank == 0:
-                print(idx,Nt_total)
-
             if idx < Nt:
                 if components[0] or components[1]:
                     A_tilde = (laserInstance.Ax_func(t+dt/2) + 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
@@ -595,9 +592,7 @@ class Tdse:
             if idx in norm_indices:
                 current_norm = self.computeNorm(psi_initial)
             if rank == 0 and idx in norm_indices:
-                norm_file = open("TDSE_files/norms.txt","a")
-                norm_file.write(f"Norm of state at step {idx}: {current_norm} \n")
-                norm_file.close()
+                print(f"Norm of state at step {idx}: {current_norm} \n")
             
             if idx in checkpoint_indices:
                 psi_initial.setName(f"psi_{idx}")

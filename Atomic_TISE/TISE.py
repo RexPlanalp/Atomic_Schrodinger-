@@ -69,7 +69,8 @@ class Tise:
             ax.set_xticks([i for i in range(0, 2 * self.parameters["lm"]["lmax"] + 1, 10)])  # Positions for ticks
             ax.set_xticklabels([str(i - self.parameters["lm"]["lmax"]) for i in range(0, 2 * self.parameters["lm"]["lmax"] + 1, 10)])  # Labels from -lmax to lmax
             ax.set_title('Reachable (white) and Unreachable (black) Points in l-m Space')
-            plt.savefig("images/lm_space.png")
+            if rank == 0:
+                plt.savefig("images/lm_space.png")
 
         def H(x):
             return (-1/(x+1E-25))          
