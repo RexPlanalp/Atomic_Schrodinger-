@@ -32,8 +32,10 @@ if "SLICE" in sys.argv:
     E_target = float(sys.argv[2])  # The target energy
     theta = np.pi / 2  # Fixed theta = pi/2
     phi_range = np.arange(0, 2 * np.pi, 0.01)  # Range of phi values
+
     lm_vals = [(l,m) for l,m in partial_spectra.keys()]
 
+    #lm_vals = [(i,i) for i in range(113,126)]
 
     # Find the closest energy index to E = 0.48
     E_idx = np.argmin(np.abs(E_range - E_target))
@@ -121,19 +123,36 @@ if "TOTAL" in sys.argv:
         opposite_phi = phi_range[np.argmin(np.abs(((phi+np.pi) % (2*np.pi))-phi_range))]
 
         pad_val_opposite = PAD_dict[(E,theta,opposite_phi)]
-        A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
+
+        # TESTING
+        #A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
+        # TESTING
+
+        A = (pad_val-pad_val_opposite)
         asymmetry_vals.append(A)
 
     asymmetry_vals = np.array(asymmetry_vals)
-   
-    plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr", vmin=-1, vmax=1)
+    
+    # TESTING
+    #plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr", vmin=-1, vmax=1)
+    # TESTING
+
+
+    plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr")
     plt.colorbar()
     plt.savefig("images/A.png")
 
     plt.clf()
 
-    plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr",vmin = -1,vmax = 1)
-    plt.xlim([0,2])
+
+    # TESTING 
+    #plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr",vmin = -1,vmax = 1)
+    # TESTING
+
+
+    plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr")
+    plt.ylabel("Phi (radians)")
+    plt.xlabel("Energy (a.u.)")
     plt.colorbar()
     plt.savefig("images/A_rect.png")
 
