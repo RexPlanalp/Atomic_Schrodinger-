@@ -1,161 +1,141 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-import pickle
-
 import matplotlib.colors as mcolors
+from scipy.signal import find_peaks
+import json
 import sys
 
-import pyshtools as pysh
-def ylm(l,m,theta,phi):
-    return pysh.expand.spharm_lm(l,m,theta,phi, kind = 'complex', degrees = False,csphase = -1,normalization = "ortho")
+
+file_path = "input.json"
+
+# Open and load the JSON file
+with open(file_path, 'r') as file:
+    input_data = json.load(file)
+
+w = input_data["lasers"]["w"]
+dE = input_data["E"][0]
 
 
-# Load partial spectra and phases
-with open('PES_files/partial_spectra.pkl', 'rb') as file:
-    partial_spectra = pickle.load(file)
-with open('PES_files/phases.pkl', 'rb') as file:
-    phases = pickle.load(file)
+
+theta = np.pi / 2  
+phi_range = np.arange(0, 2 * np.pi, 0.01)  
 
 
-# Load energy range and compute momentum range
+def findPeakIndices(PES,dE,w):
+    d = int(w/dE)
+    peak_indices = find_peaks(PES,distance = d)
+    return peak_indices[0]
+
 E_range = np.load("PES_files/E_range.npy")
-k_range = np.sqrt(2 * E_range)
+PES = np.real(np.load("PES_files/PES.npy"))
+PAD = np.real(np.load("PES_files/PAD.npy"))
+
+peak_indices = findPeakIndices(PES,dE,w)
+
+k_vals = np.real(PAD[0,:])
+E_vals = k_vals**2/2
+theta_vals = np.real(PAD[1,:])
+phi_vals = np.real(PAD[2,:])
+pad_vals = np.real(PAD[3,:])
+
+kx_vals = k_vals*np.sin(theta_vals)*np.cos(phi_vals)
+ky_vals = k_vals*np.sin(theta_vals)*np.sin(phi_vals)
 
 
-# Define parameters, depends on polarization
-theta = np.pi / 2  # Fixed theta = pi/2
-phi_range = np.arange(0, 2 * np.pi, 0.01)  # Range of phi values
+PAD_dict = {}
+for i,E in enumerate(E_vals):
+    PAD_dict[(E,theta_vals[i],phi_vals[i])] = pad_vals[i]
 
-if "SLICE" in sys.argv:
+asymmetry_vals = []
+for key,value in PAD_dict.items():
+    E,theta,phi = key
+    pad_val = value
+    opposite_phi = phi_range[np.argmin(np.abs(((phi+np.pi) % (2*np.pi))-phi_range))]
 
-    E_target = float(sys.argv[2])  # The target energy
-    theta = np.pi / 2  # Fixed theta = pi/2
-    phi_range = np.arange(0, 2 * np.pi, 0.01)  # Range of phi values
+    pad_val_opposite = PAD_dict[(E,theta,opposite_phi)]
 
-    lm_vals = [(l,m) for l,m in partial_spectra.keys()]
+    # Relative Asymmetry
+    #A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
 
-    #lm_vals = [(i,i) for i in range(113,126)]
+    # Logarithmic Asymmetry
+    A = np.log(pad_val/pad_val_opposite)
 
-    # Find the closest energy index to E = 0.48
-    E_idx = np.argmin(np.abs(E_range - E_target))
-    k = k_range[E_idx]  # The corresponding momentum value
-    E = E_range[E_idx]  # The corresponding energy value
+    # Absolute Asymmetry 
+    #A = pad_val-pad_val_opposite
 
-    # Initialize lists for phi values and asymmetry values
-    phi_vals = []
-    A_vals = []
+    # SMAPE 
+    #A = np.abs(pad_val-pad_val_opposite)/((np.abs(pad_val)+np.abs(pad_val_opposite))/2)
 
-    total_amplitues = {}
-    total_phases = {}
+    # Scaled RMSE
 
-    for key, value in partial_spectra.items():
-        l, m = key
-        if (l, m) not in lm_vals:
-            continue
-            
-        total_amplitues[(l, m)] = np.abs((-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx])
-        total_phases[(l, m)] = np.angle((-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx])
-
-    # Loop over phi to compute the asymmetry
-    for phi in phi_range:
-        print(phi)
-
-        phi_vals.append(phi)
-        
-        pad_amp = 0
-        pad_amp_opp = 0
-        
-        # Compute partial wave expansions for forward and opposite directions
-        for key, value in partial_spectra.items():
-            l, m = key
-            if (l, m) not in lm_vals:
-                continue
-            
-        
-            pad_amp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,np.pi/2,phi) 
-            pad_amp_opp += total_amplitues[key] * np.exp(1j*total_phases[key]) * ylm(l,m,np.pi/2,phi+np.pi) 
-        
-        # Compute the photoelectron angular distributions
-        pad_val = np.abs(pad_amp) ** 2
-        pad_val_opp = np.abs(pad_amp_opp) ** 2
-        
-        # Calculate asymmetry A = (PAD - PAD_opp) / (PAD + PAD_opp)
-        A = (pad_val - pad_val_opp) / (pad_val + pad_val_opp)
-        A_vals.append(A)
+    #A = np.sqrt((pad_val-pad_val_opposite)**2)/np.sqrt((pad_val**2+pad_val_opposite**2)/2)
 
 
-    # Convert lists to numpy arrays
-    phi_vals = np.array(phi_vals)
-    A_vals = np.array(A_vals)
+    asymmetry_vals.append(A)
+
+asymmetry_vals = np.array(asymmetry_vals)
 
 
-    # Plot phi vs asymmetry (Original Data)
-    plt.plot(phi_vals, A_vals, label=f'Asymmetry at E = {E_target} a.u.', color='b')
-    plt.xlabel('Phi (radians)')
-    plt.ylabel('Asymmetry (A)')
-    plt.title(f'Asymmetry vs Phi at E = {E_target} a.u.')
-    plt.legend()
-    plt.savefig("images/A_slice.png")
-    plt.clf()
+asymmetry_slice = []
+temp_vals = []
+E_input = float(sys.argv[1])
+E_target = E_range[np.argmin(np.abs(E_range - E_input))]
 
-if "TOTAL" in sys.argv:
-    PAD = np.load("PES_files/PAD.npy")
+for idx, E_val in enumerate(E_vals):
+    if np.isclose(E_val, E_target):
+        temp_vals.append(phi_vals[idx])
+        asymmetry_slice.append(asymmetry_vals[idx])
 
-    k_vals = np.real(PAD[0,:])
-    E_vals = k_vals**2/2
-    theta_vals = np.real(PAD[1,:])
-    phi_vals = np.real(PAD[2,:])
-    pad_vals = np.real(PAD[3,:])
+# Convert lists to numpy arrays for sorting
+temp_vals = np.array(temp_vals)
+asymmetry_slice = np.array(asymmetry_slice)
 
-    kx_vals = k_vals*np.sin(theta_vals)*np.cos(phi_vals)
-    ky_vals = k_vals*np.sin(theta_vals)*np.sin(phi_vals)
+# Sort the asymmetry_slice based on temp_vals (phi values)
+sorted_indices = np.argsort(temp_vals)
+temp_vals = temp_vals[sorted_indices]
+asymmetry_slice = asymmetry_slice[sorted_indices]
 
 
-    PAD_dict = {}
-    for i,E in enumerate(E_vals):
-        PAD_dict[(E,theta_vals[i],phi_vals[i])] = pad_vals[i]
-    
-    asymmetry_vals = []
-    for key,value in PAD_dict.items():
-        E,theta,phi = key
-        pad_val = value
-        opposite_phi = phi_range[np.argmin(np.abs(((phi+np.pi) % (2*np.pi))-phi_range))]
-
-        pad_val_opposite = PAD_dict[(E,theta,opposite_phi)]
-
-        # TESTING
-        #A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
-        # TESTING
-
-        A = (pad_val-pad_val_opposite)
-        asymmetry_vals.append(A)
-
-    asymmetry_vals = np.array(asymmetry_vals)
-    
-    # TESTING
-    #plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr", vmin=-1, vmax=1)
-    # TESTING
 
 
-    plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr")
-    plt.colorbar()
-    plt.savefig("images/A.png")
+plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr")
+for peak_idx in peak_indices:
+    plt.axvline(x=E_range[peak_idx],color='black')
+plt.ylabel("Phi (radians)")
+plt.xlabel("Energy (a.u.)")
+plt.colorbar()
+plt.savefig("TEST_1.png")
+plt.clf()
 
-    plt.clf()
+plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr")
+for peak_idx in peak_indices:
+    E_peak = E_range[peak_idx]
+    p_peak = np.sqrt(2*E_peak)
+    circle = plt.Circle((0, 0), p_peak, color='black', fill=False)
+    plt.gca().add_artist(circle)
+plt.colorbar()
+plt.savefig("TEST_2.png")
+plt.clf()
+
+plt.plot(phi_range,asymmetry_slice)
+plt.ylabel("Asymmetry")
+plt.xlabel("Phi (radians)")
+plt.savefig("TEST_3.png")
+plt.clf()
+
+plt.semilogy(E_range,PES)
+for peak_idx in peak_indices:
+    if PES[peak_idx] == np.max(PES[peak_indices]):
+        color = "black"
+    else:
+        color = "red"
+    plt.plot(E_range[peak_idx],PES[peak_idx],linestyle='none',marker='o',color=color,label = f"{E_range[peak_idx]:.3f}")
+plt.legend()
+plt.ylabel("PES")
+plt.xlabel("Energy (a.u.)")
+plt.savefig("TEST_4.png")
+plt.clf()
 
 
-    # TESTING 
-    #plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr",vmin = -1,vmax = 1)
-    # TESTING
-
-
-    plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr")
-    plt.ylabel("Phi (radians)")
-    plt.xlabel("Energy (a.u.)")
-    plt.colorbar()
-    plt.savefig("images/A_rect.png")
-
-    plt.clf()
 
 
