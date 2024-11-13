@@ -18,17 +18,19 @@ LOG_PES = "LOG" == sys.argv[1]
 LOG_PAD = "LOG" == sys.argv[2]
 
 PEAKS  = "PEAKS" in sys.argv
+w = input_data["lasers"]["w"]
+dE = input_data["E"][0]
 
+def findPeakIndices(PES,dE,w):
+    d = int(w/dE)
+    peak_indices = find_peaks(PES,distance = d)
+    return peak_indices[0]
 
+E_range = np.load("PES_files/E_range.npy")
+PES = np.real(np.load("PES_files/PES.npy"))
+PAD = np.real(np.load("PES_files/PAD.npy"))
 
-def findPeakIndices(PES):
-    peak_indices = find_peaks(PES,width = 2)[0]
-    return peak_indices
-
-def findCentralPeakIndex(PES):
-    peak_indices = findPeakIndices(PES)
-    max_index = np.argmax(PES[peak_indices])
-    return max_index
+peak_indices = findPeakIndices(PES,dE,w)
 
 E_range = np.load("PES_files/E_range.npy")
 PES = np.real(np.load("PES_files/PES.npy"))
@@ -52,19 +54,21 @@ else:
 
 if PEAKS:
     peak_indices = find_peaks(PES,width = 2)[0]
-    max_index = findCentralPeakIndex(PES)
 
-    max_E = E_range[peak_indices][max_index]
-    ati_peak_energies = E_range[peak_indices]
-    print("Max E:",max_E)
-
-    plt.semilogy(E_range,PES,color = "k",label = "PES")
-
-    for i in peak_indices:
-        plt.scatter(E_range[i],PES[i],color = "b",label =  f"E = {E_range[i]}")
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 0.175), ncol=3)
-    plt.savefig("images/peak.png")
+    plt.semilogy(E_range,PES)
+    for peak_idx in peak_indices:
+        if PES[peak_idx] == np.max(PES[peak_indices]):
+            color = "black"
+        else:
+            color = "red"
+        plt.plot(E_range[peak_idx],PES[peak_idx],linestyle='none',marker='o',color=color,label = f"{E_range[peak_idx]:.3f}")
+    plt.legend(fontsize='x-small')
+    plt.ylabel("PES")
+    plt.xlabel("Energy (a.u.)")
+    plt.savefig("images/PES_peaks.png")
     plt.clf()
+
+
 
 PAD = np.load("PES_files/PAD.npy")
 
@@ -124,4 +128,5 @@ elif SLICE == "XZ":
 
 
 
-
+total_ionization = np.trapz(PES,E_range)
+print(total_ionization)

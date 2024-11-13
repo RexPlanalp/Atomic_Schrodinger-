@@ -8,7 +8,7 @@
 #SBATCH -t 0-01:00:00
 
 
-REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/Research_Plotting"
+REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/General_Plotting"
                                                              
 
 hostname

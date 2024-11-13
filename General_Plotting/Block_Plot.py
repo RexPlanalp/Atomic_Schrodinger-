@@ -92,7 +92,7 @@ class PES:
             psi_final_bspline = real_part + 1j * imaginary_part
         self.final_state = psi_final_bspline
 
-    def compute_norm(self):
+    def compute_norm(self,CONT):
         print("Computing Total Norm...")
         print('\n')
         n_basis = self.parameters["splines"]["n_basis"]
@@ -105,6 +105,8 @@ class PES:
         total = 0
         for (l, m), block_index in lm_dict.items():
             wavefunction_block = wavefunction[block_index * n_basis:(block_index + 1) * n_basis]
+            if CONT:
+                wavefunction_block = self.project_out_bound_states(wavefunction_block,l)
             norm = wavefunction_block.conj().dot(S_R.dot(wavefunction_block))
             total += norm
         print("Total Norm:", np.real(total))
@@ -241,7 +243,7 @@ if __name__ == '__main__':
     pes = PES("input.json")
     pes.loadS_R()
     pes.load_final_state()
-    pes.compute_norm()
+    pes.compute_norm(CONT)
     pes.compute_distribution(projOutBound=CONT,log=LOG)
     pes.plot_distribution_slice(projOutBound=CONT,log = LOG)
 

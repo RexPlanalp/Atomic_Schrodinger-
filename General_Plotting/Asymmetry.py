@@ -15,7 +15,7 @@ with open(file_path, 'r') as file:
 w = input_data["lasers"]["w"]
 dE = input_data["E"][0]
 
-
+PEAKS = "PEAKS" in sys.argv
 
 theta = np.pi / 2  
 phi_range = np.arange(0, 2 * np.pi, 0.01)  
@@ -99,28 +99,31 @@ asymmetry_slice = asymmetry_slice[sorted_indices]
 
 
 plt.scatter(E_vals,phi_vals,c=asymmetry_vals, cmap="bwr")
-for peak_idx in peak_indices:
-    plt.axvline(x=E_range[peak_idx],color='black')
+if PEAKS:
+    for peak_idx in peak_indices:
+        plt.axvline(x=E_range[peak_idx],color='black')
 plt.ylabel("Phi (radians)")
 plt.xlabel("Energy (a.u.)")
 plt.colorbar()
-plt.savefig("TEST_1.png")
+plt.savefig("A_rect.png")
 plt.clf()
 
 plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr")
-for peak_idx in peak_indices:
-    E_peak = E_range[peak_idx]
-    p_peak = np.sqrt(2*E_peak)
-    circle = plt.Circle((0, 0), p_peak, color='black', fill=False)
-    plt.gca().add_artist(circle)
+if PEAKS:
+    for peak_idx in peak_indices:
+        E_peak = E_range[peak_idx]
+        p_peak = np.sqrt(2*E_peak)
+        circle = plt.Circle((0, 0), p_peak, color='black', fill=False)
+        plt.gca().add_artist(circle)
 plt.colorbar()
-plt.savefig("TEST_2.png")
+plt.savefig("A_polar.png")
 plt.clf()
 
 plt.plot(phi_range,asymmetry_slice)
-plt.ylabel("Asymmetry")
+plt.ylabel(f"Asymmetry at {E_target} ")
 plt.xlabel("Phi (radians)")
-plt.savefig("TEST_3.png")
+plt.title(f"Asymmetry at {E_target}")
+plt.savefig("A_slice.png")
 plt.clf()
 
 plt.semilogy(E_range,PES)
@@ -130,10 +133,10 @@ for peak_idx in peak_indices:
     else:
         color = "red"
     plt.plot(E_range[peak_idx],PES[peak_idx],linestyle='none',marker='o',color=color,label = f"{E_range[peak_idx]:.3f}")
-plt.legend()
+plt.legend(fontsize='xx-small')
 plt.ylabel("PES")
 plt.xlabel("Energy (a.u.)")
-plt.savefig("TEST_4.png")
+plt.savefig("PES_peaks.png")
 plt.clf()
 
 

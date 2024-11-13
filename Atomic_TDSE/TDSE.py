@@ -592,7 +592,7 @@ class Tdse:
             if idx in norm_indices:
                 current_norm = self.computeNorm(psi_initial)
             if rank == 0 and idx in norm_indices:
-                print(f"Norm of state at step {idx}: {current_norm} \n")
+                print(f"Norm of state at step {idx}/{Nt_total}: {current_norm} \n")
             
             if idx in checkpoint_indices:
                 psi_initial.setName(f"psi_{idx}")

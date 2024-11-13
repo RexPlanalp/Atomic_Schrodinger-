@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 # Laser/Species Conditions
 
 Ip = 0.5
-N = 10
-wavelength = 800
+N = 20
+wavelength = 535
 w = 0.057 * 800/wavelength
-I = 2.0e14 / 3.51E16
+I = 2.0e13 / 3.51E16
 
 tau = 2*np.pi/w
 t = np.linspace(0,tau,1000)
@@ -15,7 +15,7 @@ envelope = np.sin(np.pi*t/tau)**2
 I_profile = I * envelope
 Up = I_profile/(4*w**2)
 
-E = 1.701
+E = 0.079
 
 def print_direct_cutoff():
     energy = 2*np.max(Up)
@@ -26,15 +26,17 @@ def print_rescattering_cutoff():
 def print_keldysh_parameter():
     gamma = np.sqrt(Ip/(2*np.max(Up)))
     print(f"Keldysh parameter is {gamma}")
+    return gamma
 def print_intensity_parameter():
     z = np.max(Up)/w
     print(f"Intensity parameter is {z}")
+    
 
 
 def find_photons(E):
     n = (E+Ip+Up)/w
     return n
-def plot_channels(n):
+def plot_channels(n,gamma):
     channel_indices = np.where(np.diff(np.floor(n)))[0]
 
     for idx in channel_indices:
@@ -45,18 +47,22 @@ def plot_channels(n):
 
     plt.plot(t,n)
     print("Largest Channel:",np.max(n))
+    plt.ylabel("Number of Photons")
+    plt.xlabel("Time (a.u.)")
+    plt.title(rf"Channel Closings: $\gamma$ = {round(gamma,3)}")
     plt.savefig("images/channels.png")
     plt.clf()
-            
+
+     
 if __name__ == "__main__":
     print_direct_cutoff()
     print("\n")
     print_rescattering_cutoff()
     print("\n")
-    print_keldysh_parameter()
+    gamma = print_keldysh_parameter()
     print("\n")
     print_intensity_parameter()
     print("\n")
     n = find_photons(E)
-    plot_channels(n)
+    plot_channels(n,gamma)
     print("Done")

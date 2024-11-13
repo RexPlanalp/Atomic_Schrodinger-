@@ -43,7 +43,7 @@ amplitudes = []
 
 for key, value in partial_spectra.items():
     l, m = key
-    condition = l == m
+    condition = m==0
     if not condition:
         continue
     
@@ -56,7 +56,9 @@ sorted_indices = np.argsort(amplitudes)[::-1]
 sorted_amplitudes = np.array(amplitudes)[sorted_indices]
 sorted_lm_vals = np.array(lm_vals)[sorted_indices]
 
-plt.scatter([l for l, m in sorted_lm_vals], sorted_amplitudes, s = 2,label = np.array(lm_vals)[np.argmax(amplitudes)])
+plt.scatter([l for l, m in sorted_lm_vals], sorted_amplitudes, s = 2,label = np.array(lm_vals)[np.argmax(amplitudes)],color = "black")
+plt.ylabel("Partial Wave Amplitude")
+plt.xlabel("l")
 plt.legend()
 plt.savefig("images/top.png")
 
