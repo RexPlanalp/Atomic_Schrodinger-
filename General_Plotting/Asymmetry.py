@@ -137,7 +137,7 @@ for peak_idx in peak_indices:
 plt.legend(fontsize='xx-small')
 plt.ylabel("PES")
 plt.xlabel("Energy (a.u.)")
-plt.savefig("images/PES_peaks.png")
+plt.savefig("images/peaks.png")
 plt.clf()
 
 

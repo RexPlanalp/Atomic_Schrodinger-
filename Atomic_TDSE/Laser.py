@@ -79,6 +79,12 @@ class laser:
             plt.savefig("images/laser.png")
             plt.clf()
 
+            amplitude = np.sqrt(self.Ax_func(self.total_time)**2 + self.Ay_func(self.total_time)**2 + self.Az_func(self.total_time)**2)
+            plt.plot(self.total_time,amplitude,label = "Amplitude")
+            plt.legend()
+            plt.savefig("images/laser_amplitude.png")
+            plt.clf()
+
             np.save("TDSE_files/t_total.npy",self.total_time)
         if rank == 0 and self.components[0] and self.components[1]:
             plt.plot(self.Ax_func(self.total_time),self.Ay_func(self.total_time))

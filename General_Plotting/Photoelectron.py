@@ -44,10 +44,6 @@ if LOG_PES:
     plt.semilogy(E_range,PES,color = "k")
     plt.xlabel("Energy (au)")
     plt.ylabel("Yield (Log scale)")
-    if np.max(E_range) > 2:
-        plt.xlim([0,2])
-    else:
-        plt.xlim([0,np.max(E_range)])
     plt.axvline(2*Up_max)
     plt.savefig("images/log_PES.png")
     plt.clf()
@@ -56,6 +52,7 @@ else:
     plt.plot(E_range,PES,color = "k")
     plt.xlabel("Energy (au)")
     plt.ylabel("Yield")
+    plt.axvline(2*Up_max)
     plt.savefig("images/PES.png")
     plt.clf()
 
@@ -100,6 +97,7 @@ if SLICE == "XY":
 
     # Set normalization based on LOG_PAD and actual min/max values
     norm = mcolors.LogNorm(vmin=min_val, vmax=max_val) if LOG_PAD else mcolors.Normalize(vmin=min_val, vmax=max_val)
+    name = "log_PAD.png" if LOG_PAD else "PAD.png"
 
     # Get the smallest color in the colormap actually used by the data
     smallest_color = cmap_gradient(norm(min_val))
@@ -114,20 +112,26 @@ if SLICE == "XY":
     ax.set_ylabel("ky")
     fig.colorbar(sc, ax=ax)
 
-    plt.savefig("images/PAD.png")
+    plt.savefig("images/" + name)
 elif SLICE == "XZ":
     fig, ax = plt.subplots()  # Create a figure and axes
-    cmap_gradient = plt.get_cmap(cmap)  # Get the viridis colormap
-    smallest_color = cmap_gradient(0) 
+    cmap_gradient = plt.get_cmap(cmap)  # Get the chosen colormap
 
+    # Set normalization based on LOG_PAD and actual min/max values
+    norm = mcolors.LogNorm(vmin=min_val, vmax=max_val) if LOG_PAD else mcolors.Normalize(vmin=min_val, vmax=max_val)
+    name = "log_PAD.png" if LOG_PAD else "PAD.png"
 
+    # Get the smallest color in the colormap actually used by the data
+    smallest_color = cmap_gradient(norm(min_val))
     ax.set_facecolor(smallest_color)
-    if LOG_PAD:
-        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap,norm=mcolors.LogNorm(vmin=min_val,vmax=max_val))
-    else:
-        sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap)
+
+    # Create the scatter plot with appropriate normalization
+    sc = ax.scatter(kz_vals, kx_vals, c=pad_vals, cmap=cmap, norm=norm)
+    
+    # Additional plot settings
     ax.set_aspect('equal', adjustable='box')
-    ax.set_xlabel("kz")
-    ax.set_ylabel("kx")
+    ax.set_xlabel("kx")
+    ax.set_ylabel("ky")
     fig.colorbar(sc, ax=ax)
-    plt.savefig("images/PAD.png")
+
+    plt.savefig("images/" + name)
