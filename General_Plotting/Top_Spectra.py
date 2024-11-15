@@ -43,24 +43,30 @@ amplitudes = []
 
 for key, value in partial_spectra.items():
     l, m = key
-    condition = m==0
+    condition = l == m
     if not condition:
         continue
-    
     amplitudes.append( np.abs((-1j) ** l * np.exp(1j * phases[(E, l)]) * value[E_idx]))
     lm_vals.append((l, m))
-    
 
 sorted_indices = np.argsort(amplitudes)[::-1]
 
 sorted_amplitudes = np.array(amplitudes)[sorted_indices]
 sorted_lm_vals = np.array(lm_vals)[sorted_indices]
 
-plt.scatter([l for l, m in sorted_lm_vals], sorted_amplitudes, s = 2,label = np.array(lm_vals)[np.argmax(amplitudes)],color = "black")
+# Scatter plot
+plt.scatter([l for l, m in sorted_lm_vals], sorted_amplitudes, s=2, color="black")
 plt.ylabel("Partial Wave Amplitude")
-plt.xlabel("l")
-plt.legend()
+plt.xlabel("m")
+
+# Adding small text labels for each point with (l, m)
+for i, (l, m) in enumerate(sorted_lm_vals):
+    plt.text(l, sorted_amplitudes[i], f"({l},{m})", fontsize=6, ha='center')
+
+# Add legend and save the figure
+plt.legend([f"Max: {sorted_lm_vals[np.argmax(sorted_amplitudes)]}"], loc="upper right")
 plt.savefig("images/top.png")
+
 
 
 

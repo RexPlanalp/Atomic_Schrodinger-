@@ -55,10 +55,10 @@ for key,value in PAD_dict.items():
     pad_val_opposite = PAD_dict[(E,theta,opposite_phi)]
 
     # Relative Asymmetry
-    #A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
+    A = (pad_val-pad_val_opposite)/(pad_val+pad_val_opposite)
 
     # Logarithmic Asymmetry
-    A = np.log(pad_val/pad_val_opposite)
+    #A = np.log(pad_val/pad_val_opposite)
 
     # Absolute Asymmetry 
     #A = pad_val-pad_val_opposite
@@ -104,8 +104,9 @@ if PEAKS:
         plt.axvline(x=E_range[peak_idx],color='black')
 plt.ylabel("Phi (radians)")
 plt.xlabel("Energy (a.u.)")
+plt.xlim([0,1.4])
 plt.colorbar()
-plt.savefig("A_rect.png")
+plt.savefig("images/A_rect.png")
 plt.clf()
 
 plt.scatter(kx_vals, ky_vals, c=asymmetry_vals, cmap="bwr")
@@ -116,14 +117,14 @@ if PEAKS:
         circle = plt.Circle((0, 0), p_peak, color='black', fill=False)
         plt.gca().add_artist(circle)
 plt.colorbar()
-plt.savefig("A_polar.png")
+plt.savefig("images/A_polar.png")
 plt.clf()
 
 plt.plot(phi_range,asymmetry_slice)
 plt.ylabel(f"Asymmetry at {E_target} ")
 plt.xlabel("Phi (radians)")
 plt.title(f"Asymmetry at {E_target}")
-plt.savefig("A_slice.png")
+plt.savefig("images/A_slice.png")
 plt.clf()
 
 plt.semilogy(E_range,PES)
@@ -136,7 +137,7 @@ for peak_idx in peak_indices:
 plt.legend(fontsize='xx-small')
 plt.ylabel("PES")
 plt.xlabel("Energy (a.u.)")
-plt.savefig("PES_peaks.png")
+plt.savefig("images/PES_peaks.png")
 plt.clf()
 
 

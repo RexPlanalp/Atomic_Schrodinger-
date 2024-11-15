@@ -20,6 +20,8 @@ LOG_PAD = "LOG" == sys.argv[2]
 PEAKS  = "PEAKS" in sys.argv
 w = input_data["lasers"]["w"]
 dE = input_data["E"][0]
+I = input_data["lasers"]["I"] / 3.51E16
+Up_max = I/(4*w**2)
 
 def findPeakIndices(PES,dE,w):
     d = int(w/dE)
@@ -42,6 +44,11 @@ if LOG_PES:
     plt.semilogy(E_range,PES,color = "k")
     plt.xlabel("Energy (au)")
     plt.ylabel("Yield (Log scale)")
+    if np.max(E_range) > 2:
+        plt.xlim([0,2])
+    else:
+        plt.xlim([0,np.max(E_range)])
+    plt.axvline(2*Up_max)
     plt.savefig("images/log_PES.png")
     plt.clf()
 else:
@@ -124,9 +131,3 @@ elif SLICE == "XZ":
     ax.set_ylabel("kx")
     fig.colorbar(sc, ax=ax)
     plt.savefig("images/PAD.png")
-
-
-
-
-total_ionization = np.trapz(PES,E_range)
-print(total_ionization)
