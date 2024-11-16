@@ -35,6 +35,8 @@ class Tdse:
         
         components = [(1 if polarization[i] != 0 or ell * ellipticity_Vector[i] != 0 else 0) for i in range(3)]
 
+        self.save_checkpoints = self.parameters["TDSE"]["save_checkpoints"]
+        self.norm_checkpoints = self.parameters["TDSE"]["norm_checkpoints"]
 
         
         self.lm_dict,self.block_dict = utility.lm_expansion(self.parameters["lm"]["lmax"], self.parameters["lm"]["mmin"],self.parameters["lm"]["mmax"],self.parameters["lm"]["expansion"],\
@@ -457,12 +459,12 @@ class Tdse:
         S_norm.destroy()
         return np.real(prod)
 
-    def computeNormIndices(self,Nt_total,num_of_indices = 20):
-        norm_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
+    def computeNormIndices(self,Nt_total):
+        norm_indices = np.linspace(0, Nt_total - 1, num=self.norm_checkpoints, dtype=int)
         return norm_indices
 
-    def computeCheckpointIndices(self,Nt_total,num_of_indices = 8):
-        checkpoint_indices = np.linspace(0, Nt_total - 1, num=num_of_indices, dtype=int)
+    def computeCheckpointIndices(self,Nt_total):
+        checkpoint_indices = np.linspace(0, Nt_total - 1, num=self.save_checkpoints, dtype=int)
         return checkpoint_indices
 
     def loadStartingState(self):
