@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 # Laser/Species Conditions
 
 Ip = 0.5
-N = 20
-wavelength = 1200
+N = 10
+wavelength = 400
 w = 0.057 * 800/wavelength
 I = 2.0e14 / 3.51E16
 
@@ -15,7 +15,7 @@ envelope = np.sin(np.pi*t/tau)**2
 I_profile = I * envelope
 Up = I_profile/(4*w**2)
 
-E = 1.603
+E = 0.240
 
 def print_direct_cutoff():
     energy = 2*np.max(Up)

@@ -21,9 +21,12 @@ theta = np.pi / 2
 phi_range = np.arange(0, 2 * np.pi, 0.01)  
 
 
-def findPeakIndices(PES,dE,w):
+def findPeakIndices(PES,dE,w,spaced):
     d = int(w/dE)
-    peak_indices = find_peaks(PES,distance = d)
+    if spaced:
+        peak_indices = find_peaks(PES,distance = d)
+    else:
+        peak_indices= find_peaks(PES)
     return peak_indices[0]
 
 E_range = np.load("PES_files/E_range.npy")
@@ -104,7 +107,6 @@ if PEAKS:
         plt.axvline(x=E_range[peak_idx],color='black')
 plt.ylabel("Phi (radians)")
 plt.xlabel("Energy (a.u.)")
-plt.xlim([0,1.4])
 plt.colorbar()
 plt.savefig("images/A_rect.png")
 plt.clf()
