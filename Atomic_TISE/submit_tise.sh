@@ -3,7 +3,7 @@
 #SBATCH -p jila
 #SBATCH --nodes 1
 #SBATCH --ntasks 32
-#SBATCH --mem=164G
+#SBATCH --mem=244G
 #SBATCH -o run.log 
 #SBATCH -t 0-02:00:00
 
