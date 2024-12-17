@@ -53,6 +53,7 @@ else:
     plt.xlabel("Energy (au)")
     plt.ylabel("Yield")
     plt.axvline(2*Up_max)
+    plt.grid(True)
     plt.savefig("images/PES.png")
     plt.clf()
 

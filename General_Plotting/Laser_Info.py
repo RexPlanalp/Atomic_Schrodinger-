@@ -5,17 +5,17 @@ import matplotlib.pyplot as plt
 
 Ip = 0.5
 N = 10
-wavelength = 400
+wavelength = 800
 w = 0.057 * 800/wavelength
 I = 2.0e14 / 3.51E16
 
 tau = 2*np.pi/w
 t = np.linspace(0,tau,1000)
 envelope = np.sin(np.pi*t/tau)**2
-I_profile = I * envelope
+I_profile = I * envelope * envelope
 Up = I_profile/(4*w**2)
 
-E = 0.240
+E = 0.54
 
 def print_direct_cutoff():
     energy = 2*np.max(Up)

@@ -56,7 +56,7 @@ sorted_lm_vals = np.array(lm_vals)[sorted_indices]
 
 sorted_l_vals = np.array([l for l, m in sorted_lm_vals])
 
-mask = (sorted_l_vals >= 22) & (sorted_l_vals <= 30)
+mask = (sorted_l_vals >= 40) & (sorted_l_vals <= 46)
 
 
 # Scatter plot
