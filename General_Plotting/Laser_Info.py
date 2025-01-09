@@ -15,7 +15,7 @@ envelope = np.sin(np.pi*t/tau)**2
 I_profile = I * envelope * envelope
 Up = I_profile/(4*w**2)
 
-E = 0.54
+E = 0.655
 
 def print_direct_cutoff():
     energy = 2*np.max(Up)
@@ -53,6 +53,14 @@ def plot_channels(n,gamma):
     plt.savefig("images/channels.png")
     plt.clf()
 
+def plot_comparison(n):
+    max_n = np.max(n)
+    rounded_n = np.max(np.round(n))
+    diff = -(max_n - rounded_n)
+    print("Difference:",diff)
+
+    
+
      
 if __name__ == "__main__":
     print_direct_cutoff()
@@ -65,4 +73,5 @@ if __name__ == "__main__":
     print("\n")
     n = find_photons(E)
     plot_channels(n,gamma)
+    plot_comparison(n)
     print("Done")

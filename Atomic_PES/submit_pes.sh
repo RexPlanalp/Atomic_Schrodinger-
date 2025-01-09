@@ -3,9 +3,9 @@
 #SBATCH -p jila
 #SBATCH --nodes 1
 #SBATCH --ntasks 1
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH -o run.log 
-#SBATCH -t 2-00:00:00
+#SBATCH -t 7-00:00:00
 
 REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/Atomic_PES"
                                                                

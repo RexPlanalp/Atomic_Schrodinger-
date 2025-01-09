@@ -3,9 +3,9 @@
 #SBATCH -p jila
 #SBATCH --nodes 1
 #SBATCH --ntasks 32
-#SBATCH --mem=244G
+#SBATCH --mem=144G
 #SBATCH -o run.log 
-#SBATCH -t 0-02:00:00
+#SBATCH -t 0-08:00:00
 
 #SBATCH --exclude=node73
 #SBATCH --exclude=node81

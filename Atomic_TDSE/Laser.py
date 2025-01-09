@@ -14,6 +14,7 @@ class laser:
 
         w = TDSEInstance.parameters["lasers"]["w"]
         I = TDSEInstance.parameters["lasers"]["I"]/3.51E16
+        self.CEP = TDSEInstance.parameters["lasers"]["CEP"]*np.pi
         E_0 = np.sqrt(I)
         self.A_0 = E_0/w
 
@@ -58,13 +59,13 @@ class laser:
         self.t_post = t_post
 
         def Ax(t):
-            return np.where(t<=time_size,envFunc(t) * 1 / np.sqrt(1 + ell**2) * (polarization[0] * np.sin(w * t) - ell * ellipticity_Vector[0] * np.cos(w * t)),0.0)
+            return np.where(t<=time_size,envFunc(t) * 1 / np.sqrt(1 + ell**2) * (polarization[0] * np.sin(w * t+self.CEP) - ell * ellipticity_Vector[0] * np.cos(w * t+self.CEP)),0.0)
             
         def Ay(t):
-            return np.where(t<=time_size,envFunc(t) * 1 / np.sqrt(1 + ell**2) * (polarization[1] * np.sin(w * t) - ell * ellipticity_Vector[1] * np.cos(w * t)),0.0)
+            return np.where(t<=time_size,envFunc(t) * 1 / np.sqrt(1 + ell**2) * (polarization[1] * np.sin(w * t+self.CEP) - ell * ellipticity_Vector[1] * np.cos(w * t+self.CEP)),0.0)
         
         def Az(t):
-            return np.where(t<=time_size,envFunc(t) * 1 / np.sqrt(1 + ell**2) * (polarization[2] * np.sin(w * t) - ell * ellipticity_Vector[2] * np.cos(w * t)),0.0)
+            return np.where(t<=time_size,envFunc(t) * 1 / np.sqrt(1 + ell**2) * (polarization[2] * np.sin(w * t+self.CEP) - ell * ellipticity_Vector[2] * np.cos(w * t+self.CEP)),0.0)
         self.Ax_func = Ax
         self.Ay_func = Ay
         self.Az_func = Az

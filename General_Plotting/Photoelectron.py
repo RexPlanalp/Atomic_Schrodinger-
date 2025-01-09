@@ -131,8 +131,8 @@ elif SLICE == "XZ":
     
     # Additional plot settings
     ax.set_aspect('equal', adjustable='box')
-    ax.set_xlabel("kx")
-    ax.set_ylabel("ky")
+    ax.set_xlabel("kz")
+    ax.set_ylabel("kx")
     fig.colorbar(sc, ax=ax)
 
     plt.savefig("images/" + name)
