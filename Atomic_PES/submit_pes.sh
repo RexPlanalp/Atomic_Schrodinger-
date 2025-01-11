@@ -7,6 +7,8 @@
 #SBATCH -o run.log 
 #SBATCH -t 7-00:00:00
 
+#SBATCH --exclude=node48
+
 REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/Atomic_PES"
                                                                
 hostname
