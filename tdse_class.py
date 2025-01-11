@@ -7,6 +7,7 @@ import os as os
 from collections.abc import Mapping
 from collections import deque
 from petsc4py import PETSc
+import petsc4py.PETSc
 from slepc4py import SLEPc
 import petsc4py
 
@@ -524,7 +525,8 @@ class tdse(simulation.simulation):
        
         Nt_total = self.input_params["box"]["Nt_total"]
         for idx in range(starting_idx,self.input_params["box"]["Nt_total"]):
-            print(f"Norm of state at step {idx}/{Nt_total}: {current_norm} \n")
+            if rank == 0:
+                print(f"Iteration {idx}/{Nt_total} \n")
 
             partial_L_copy = self.atomic_L.copy()
             partial_R_copy = self.atomic_R.copy()
