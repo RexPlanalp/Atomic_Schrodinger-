@@ -90,7 +90,7 @@ kz_vals = k_vals * np.cos(theta_vals)
 max_val = np.max(np.real(pad_vals))
 min_val = np.max(np.real(pad_vals))*10**-2
 
-cmap = "plasma"
+cmap = "hot_r"
 
 if SLICE == "XY":
     fig, ax = plt.subplots()  # Create a figure and axes
@@ -100,9 +100,6 @@ if SLICE == "XY":
     norm = mcolors.LogNorm(vmin=min_val, vmax=max_val) if LOG_PAD else mcolors.Normalize(vmin=min_val, vmax=max_val)
     name = "log_PAD.png" if LOG_PAD else "PAD.png"
 
-    # Get the smallest color in the colormap actually used by the data
-    smallest_color = cmap_gradient(norm(min_val))
-    ax.set_facecolor(smallest_color)
 
     # Create the scatter plot with appropriate normalization
     sc = ax.scatter(kx_vals, ky_vals, c=pad_vals, cmap=cmap, norm=norm)
