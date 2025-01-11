@@ -538,6 +538,7 @@ class Tdse:
             laser_data = np.zeros((3,Nt+Nt_post),dtype = np.complex128)
 
         for idx in range(starting_idx,Nt_total):
+            petsc4py.PETSc.Sys.Print(f"Step {idx}/{Nt_total}",comm = PETSc.COMM_WORLD)
 
             if self.parameters["HHG"]:
                 if components[0]:
