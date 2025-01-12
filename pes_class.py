@@ -1,23 +1,17 @@
+import h5py as h5py
+import os as os
+import pickle as pickle
+import json as json
+import simulation_class as simulation
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pyshtools as pysh
-
-import h5py
-import sys
-import time
-import os
-import pickle
-import json
-import gc
-
-from numpy import exp
-from numpy import sqrt
 
 from scipy.special import sph_harm
 from scipy.integrate import simpson
 from scipy.sparse import csr_matrix
 
-import utility
 
 from petsc4py import PETSc
 from slepc4py import SLEPc
@@ -25,81 +19,23 @@ from slepc4py import SLEPc
 comm = PETSc.COMM_WORLD
 rank = comm.rank
 
-class PES:
-    def __init__(self, input_file):
-        with open(input_file, 'r') as file:
-            self.parameters = json.load(file)
-        self.input_file = input_file
+class pes(simulation.simulation):
+    def __init__(self,input_file):
+        super().__init__(input_file)
 
-     
+        r_start,r_end,Nr = self.input_params["box"]["r_range"]
+        self.r_range = np.linspace(r_start,r_end,int(Nr))
 
-
-        polarization = self.parameters["lasers"]["polarization"]
-        polarization /= np.linalg.norm(polarization)
-
-        poynting = self.parameters["lasers"]["poynting"]
-        poynting /= np.linalg.norm(poynting)
-
-        ellipticity_Vector = np.cross(polarization, poynting) 
-        ellipticity_Vector /= np.linalg.norm(ellipticity_Vector)
-
-        ell = self.parameters["lasers"]["ell"]
-        
-        components = [(1 if polarization[i] != 0 or ell * ellipticity_Vector[i] != 0 else 0) for i in range(3)]
-
-        
-        self.lm_dict,self.block_dict = utility.lm_expansion(self.parameters["lm"]["lmax"],self.parameters["lm"]["mmin"],self.parameters["lm"]["mmax"],self.parameters["lm"]["expansion"], \
-                                                            self.parameters["state"], \
-                                                                components)
-        self.parameters["total_size"] = len(self.lm_dict) * self.parameters["splines"]["n_basis"]
-        self.parameters["n_block"] = len(self.lm_dict)
-
-        def H(x):
-            return (-1/(x+1E-25))          
-        def He(x):
-                return (-1/sqrt(x**2 + 1E-25)) + -1.0*exp(-2.0329*x)/sqrt(x**2 + 1E-25)  - 0.3953*exp(-6.1805*x)
-        def Ar(x):
-            return -1.0 / (x + 1e-25) - 17.0 * exp(-0.8103 * x) / (x + 1e-25) \
-            - (-15.9583) * exp(-1.2305 * x) \
-            - (-27.7467) * exp(-4.3946 * x) \
-            - 2.1768 * exp(-86.7179 * x)
-        
-        if self.parameters["species"] == "H":
-            self.pot_func = H
-        elif self.parameters["species"] == "He":
-            self.pot_func = He
-        elif self.parameters["species"] == "Ar":
-            self.pot_func = Ar
-
-        rmax = self.parameters["box"]["grid_size"]
-        dr = self.parameters["box"]["grid_spacing"]
-        self.r_range = np.arange(dr, rmax+dr, dr)
-        self.Nr = len(self.r_range)
-
-        dE,Emax = self.parameters["E"]
+        dE,Emax = self.input_params["E"]
         self.E_range = np.round(np.arange(dE, Emax+dE, dE),decimals=3)
         
-    def get(self, key, default=None):
-        return self.parameters.get(key, default)
-    
-    def __getitem__(self, key):
-        return self.parameters[key]
-    
-    def __setitem__(self, key, value):
-        self.parameters[key] = value
-    
-    def __repr__(self):
-        return f"PES({self.input_file})"
-    
     def ylm(self,l,m,theta,phi):
         return pysh.expand.spharm_lm(l,m,theta,phi, kind = 'complex', degrees = False,csphase = -1,normalization = "ortho")
 
-    def loadS_R(self):
+    def loadS(self):
 
-        n_basis = self.parameters["splines"]["n_basis"]
-        order = self.parameters["splines"]["order"]
          
-        S = PETSc.Mat().createAIJ(n_basis ,n_basis, nnz=(2 * (order - 1) + 1), comm=PETSc.COMM_SELF)
+        S = PETSc.Mat().createAIJ(self.input_params["splines"]["n_basis"] ,self.input_params["splines"]["n_basis"], nnz=(2 * (self.input_params["splines"]["order"] - 1) + 1), comm=PETSc.COMM_SELF)
         viewer = PETSc.Viewer().createBinary('TISE_files/S.bin', 'r')
         S.load(viewer)
         viewer.destroy()
@@ -110,31 +46,14 @@ class PES:
         S_array = csr_matrix((Sv, Sj, Si))
         self.S_R = S_array
       
-
     def project_out_bound_states(self):
-        """
-        Projects out bound states from psi_final_bspline for each (l, m) channel.
-        
-        Parameters:
-        - psi_final_bspline: The input wavefunction in the B-spline basis.
-        - lm_dict: Dictionary containing (l, m) as keys and block indices as values.
-        - n_basis: The number of basis functions.
-        - pot: The potential used, for accessing the corresponding bound state data.
-        - S_R: The overlap matrix in the reduced basis.
-        
-        Returns:
-        - psi_final_bspline with the bound states projected out.
-        """
         self.final_state_cont = np.zeros_like(self.final_state)
 
-        n_basis = self.parameters["splines"]["n_basis"]
-        potential = self.parameters["species"]
-
-        for (l, m),block_idx in self.lm_dict.items():
-            wavefunction_block = self.final_state[block_idx * n_basis:(block_idx + 1) * n_basis]
+        for (l, m),block_idx in self.input_params["lm"]["lm_to_block"].items():
+            wavefunction_block = self.final_state[block_idx * self.input_params["splines"]["n_basis"]:(block_idx + 1) * self.input_params["splines"]["n_basis"]]
 
             # Load the bound states from the HDF5 file corresponding to the potential
-            with h5py.File(f'TISE_files/{potential}.h5', 'r') as f:
+            with h5py.File(f'TISE_files/{self.input_params["species"]}.h5', 'r') as f:
                 datasets = list(f.keys())
                 for dataset_name in datasets:
                     if dataset_name.startswith('Psi_'):
@@ -154,14 +73,14 @@ class PES:
                             wavefunction_block -= inner_product * bound_state
 
             # Update the block in psi_final_bspline with the modified wavefunction
-            self.final_state_cont[block_idx * n_basis:(block_idx + 1) * n_basis] = wavefunction_block
+            self.final_state_cont[block_idx * self.input_params["splines"]["n_basis"]:(block_idx + 1) * self.input_params["splines"]["n_basis"]] = wavefunction_block
 
     def compute_coulomb_waves_and_phases(self, E):
         r_range2 = self.r_range ** 2
         dr = self.r_range[1] - self.r_range[0]
         dr2 = dr * dr
 
-        lmax = self.parameters["lm"]["lmax"]
+        lmax = self.input_params["lm"]["lmax"]
         l_values = np.arange(0, lmax + 1)
         l_term = l_values * (l_values + 1)  # Shape (num_l,)
         k = np.sqrt(2 * E)
@@ -169,7 +88,7 @@ class PES:
         # Prepare potential array and replicate for each l
         potential = np.empty_like(self.r_range)
         potential[0] = np.inf  # Avoid division by zero at r=0
-        potential[1:] = self.pot_func(self.r_range[1:])
+        potential[1:] = self.input_params["box"]["potential_func"](self.r_range[1:])
         potential = np.broadcast_to(potential, (l_values.size, self.r_range.size))
 
         # Initialize Coulomb wave array for all l values
@@ -228,35 +147,31 @@ class PES:
             psi_final_bspline = real_part + 1j * imaginary_part
         self.final_state = psi_final_bspline
 
-    def expand_final_state(self, basisInstance):
-        n_block = self.parameters["n_block"]
-        n_basis = self.parameters["splines"]["n_basis"]
-        order = self.parameters["splines"]["order"]
-        knots = basisInstance.knots
-        Nr = len(self.r_range)
+    def expand_final_state(self, basis):
+        
 
         # Initialize the final state array
-        self.final_state_cont_pos = np.zeros(self.Nr * n_block, dtype=np.complex128)
+        self.final_state_cont_pos = np.zeros(len(self.r_range) * self.input_params["lm"]["n_blocks"], dtype=np.complex128)
 
         # Loop over each B-spline index `i`
-        for i in range(n_basis):
-            start = knots[i]
-            end = knots[i + order]
+        for i in range(self.input_params["splines"]["n_basis"]):
+            start = basis.knots[i]
+            end = basis.knots[i + self.input_params["splines"]["order"]]
 
             # Find the indices where the B-spline is non-zero
             valid_indices = np.where((self.r_range >= start) & (self.r_range < end))[0]
             if valid_indices.size > 0:
                 # Evaluate the B-spline once for these indices
-                y = basisInstance.B(i, order, self.r_range[valid_indices], knots)
+                y = basis.B(i, self.input_params["splines"]["order"], self.r_range[valid_indices], basis.knots)
 
                 # Loop over each block `(l, m)`
-                for (l, m), block_idx in self.lm_dict.items():
+                for (l, m), block_idx in self.input_params["lm"]["lm_to_block"].items():
                     # Extract the coefficient for this B-spline in the current block
-                    block = self.final_state_cont[block_idx * n_basis:(block_idx + 1) * n_basis]
+                    block = self.final_state_cont[block_idx * self.input_params["splines"]["n_basis"]:(block_idx + 1) * self.input_params["splines"]["n_basis"]]
                     coef = block[i]
 
                     # Compute the starting index in the flattened array
-                    start_idx = block_idx * Nr
+                    start_idx = block_idx * len(self.r_range)
 
                     # Update the wavefunction for this block
                     self.final_state_cont_pos[start_idx + valid_indices] += coef * y
@@ -272,14 +187,14 @@ class PES:
         self.phases = {}
 
         # Initialize the partial spectra dictionary for each (l, m)
-        for (l, m) in self.lm_dict.keys():
+        for (l, m) in self.input_params["lm"]["lm_to_block"].keys():
             self.partial_spectra[(l, m)] = []
 
         for E in self.E_range:
             print(E)
             phases, waves = self.compute_coulomb_waves_and_phases(E)
-            for (l, m), block_idx in self.lm_dict.items():
-                block = self.final_state_cont_pos[block_idx * self.Nr:(block_idx + 1) * self.Nr]
+            for (l, m), block_idx in self.input_params["lm"]["lm_to_block"].items():
+                block = self.final_state_cont_pos[block_idx * len(self.r_range):(block_idx + 1) * len(self.r_range)]
                 y = waves[l].conj() * block
                 inner_product = simpson(y=y, x=self.r_range)
                 # Append the inner product to the list for each (l, m)

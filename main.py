@@ -3,7 +3,7 @@ import sys as sys
 import tise_class as tise
 import tdse_class as tdse
 import basis_class as basis
-# import PES as PES
+import pes_class as pes
 
 import laser_class as laser
 import os as os
@@ -82,19 +82,19 @@ if "TDSE" in sys.argv:
         os.system("rm -rf temp")
    
 
-# elif sys.argv[1] == "PES":
-#     if rank == 0:
-#         os.mkdir("PES_files")
-   
-#     sim = PES.PES(input_file)
-#     sim.setup_simulation()
-#     basis = Basis.basis(sim)
-#     sim.loadS()
-#     sim.load_final_state()
-#     sim.project_out_bound_states()
-#     sim.expand_final_state(basis)
-#     sim.compute_partial_spectra()
-#     sim.compute_angle_integrated()
-#     sim.compute_angle_resolved()
+if "PES" in sys.argv:
+    if rank == 0:
+        os.mkdir("PES_files")
     
+    if rank == 0:
+        sim = pes.pes(input_file)
+        bspline = basis.basis(sim)
+        sim.loadS()
+        sim.load_final_state()
+        sim.project_out_bound_states()
+        sim.expand_final_state(bspline)
+        sim.compute_partial_spectra()
+        sim.compute_angle_integrated()
+        sim.compute_angle_resolved()
+        
 
