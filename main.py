@@ -18,7 +18,7 @@ import petsc4py
 rank = PETSc.COMM_WORLD.rank
 size = PETSc.COMM_WORLD.size
 
-if sys.argv[1] == "TISE":
+if "TISE" in sys.argv:
     total_start = time.time()
 
     petsc4py.PETSc.Sys.Print("Creating Directories")
@@ -28,7 +28,8 @@ if sys.argv[1] == "TISE":
             os.mkdir("TISE_files")
         if not os.path.exists("images"):
             os.mkdir("images")
-        os.mkdir("temp")
+        if not os.path.exists("temp"):
+            os.mkdir("temp")
     end = time.time()
     petsc4py.PETSc.Sys.Print("Time to create directories: ", end-start)
 
@@ -62,12 +63,14 @@ if sys.argv[1] == "TISE":
     if rank == 0:
         os.rmdir("temp")
 
+PETSc.COMM_WORLD.barrier()
 
-elif sys.argv[1] == "TDSE":
+if "TDSE" in sys.argv:
     if rank == 0:
-        os.mkdir("TDSE_files")
-        os.mkdir("images")
-        os.mkdir("temp")
+        if not os.path.exists("TDSE_files"):
+            os.mkdir("TDSE_files")
+        if not os.path.exists("temp"):
+            os.mkdir("temp")
     sim = tdse.tdse(input_file)
     field = laser.laser(sim)
     field.plotPulse(sim)
@@ -79,6 +82,7 @@ elif sys.argv[1] == "TDSE":
     sim.propagateState(field)
     if rank == 0:
         os.rmdir("temp")
+   
 
 # elif sys.argv[1] == "PES":
 #     if rank == 0:

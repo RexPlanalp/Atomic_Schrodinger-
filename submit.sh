@@ -18,7 +18,7 @@ pwd
 
 
 
-mpiexec -n $SLURM_NTASKS python $REPO_DIR/main.py "$1" >> results.log
+mpiexec -n $SLURM_NTASKS python $REPO_DIR/main.py "$1" "$2" >> results.log
 
 
 
