@@ -47,7 +47,7 @@ class simulation:
         self._time()
         self._space()
         if rank == 0:
-            with open("input_params.txt", "w") as file:
+            with open("sim_params.txt", "w") as file:
                 pprint.pprint(self.input_params, stream=file)
         return True
    

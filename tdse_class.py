@@ -38,21 +38,21 @@ class tdse(simulation.simulation):
 
         #####################################
         # TESTING
-        psi_test = PETSc.Vec().createMPI(self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],comm = PETSc.COMM_WORLD)
+        # psi_test = PETSc.Vec().createMPI(self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],comm = PETSc.COMM_WORLD)
         
-        with h5py.File(f'../../qprop_circ_sample/TISE_files/{self.input_params["box"]["potential_func"].__name__}.h5', 'r') as f:
-            data = f[f'/Psi_{self.input_params["state"][0]}_{self.input_params["state"][1]}'][:]
-            real_part = data[:,0]
-            imaginary_part = data[:,1]
-            total = real_part + 1j*imaginary_part
+        # with h5py.File(f'../../qprop_circ_sample/TISE_files/{self.input_params["box"]["potential_func"].__name__}.h5', 'r') as f:
+        #     data = f[f'/Psi_{self.input_params["state"][0]}_{self.input_params["state"][1]}'][:]
+        #     real_part = data[:,0]
+        #     imaginary_part = data[:,1]
+        #     total = real_part + 1j*imaginary_part
 
-        psi_test.setValues(global_indices,total)
-        psi_test.assemble()
+        # psi_test.setValues(global_indices,total)
+        # psi_test.assemble()
         
-        diff = psi_initial.copy()
-        diff.axpy(-1,psi_test)
-        diff_val = diff.norm(PETSc.NormType.FROBENIUS)
-        PETSc.Sys.Print(f"Norm of difference: {diff_val}",comm=PETSc.COMM_WORLD)
+        # diff = psi_initial.copy()
+        # diff.axpy(-1,psi_test)
+        # diff_val = diff.norm(PETSc.NormType.FROBENIUS)
+        # PETSc.Sys.Print(f"Norm of difference: {diff_val}",comm=PETSc.COMM_WORLD)
         ###############################################################
 
 
@@ -316,30 +316,30 @@ class tdse(simulation.simulation):
         #####################################
         # TESTING
 
-        if os.path.exists('../../qprop_circ_sample/TISE_files/S.bin'):
-            S_test = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
-            S_viewer = PETSc.Viewer().createBinary('../../qprop_circ_sample/TISE_files/S.bin', 'r')
-            S_test.load(S_viewer)
-            S_viewer.destroy()
-            S_test.assemble()
+        # if os.path.exists('../../qprop_circ_sample/TISE_files/S.bin'):
+        #     S_test = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
+        #     S_viewer = PETSc.Viewer().createBinary('../../qprop_circ_sample/TISE_files/S.bin', 'r')
+        #     S_test.load(S_viewer)
+        #     S_viewer.destroy()
+        #     S_test.assemble()
 
-        if os.path.exists('../../qprop_circ_sample/TISE_files/H.bin'):
-            H_test = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
-            H_viewer = PETSc.Viewer().createBinary('../../qprop_circ_sample/TISE_files/H.bin', 'r')
-            H_test.load(H_viewer)
-            H_viewer.destroy()
-            H_test.assemble()
+        # if os.path.exists('../../qprop_circ_sample/TISE_files/H.bin'):
+        #     H_test = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
+        #     H_viewer = PETSc.Viewer().createBinary('../../qprop_circ_sample/TISE_files/H.bin', 'r')
+        #     H_test.load(H_viewer)
+        #     H_viewer.destroy()
+        #     H_test.assemble()
 
-        S_diff = S_total.copy()
-        S_diff.axpy(-1,S_test)
-        H_diff = H_total.copy()
-        H_diff.axpy(-1,H_test)
+        # S_diff = S_total.copy()
+        # S_diff.axpy(-1,S_test)
+        # H_diff = H_total.copy()
+        # H_diff.axpy(-1,H_test)
 
-        S_val = S_diff.norm(PETSc.NormType.FROBENIUS)
-        H_val = H_diff.norm(PETSc.NormType.FROBENIUS)
+        # S_val = S_diff.norm(PETSc.NormType.FROBENIUS)
+        # H_val = H_diff.norm(PETSc.NormType.FROBENIUS)
 
-        PETSc.Sys.Print(f"Norm of S_diff: {S_val}",comm=PETSc.COMM_WORLD)
-        PETSc.Sys.Print(f"Norm of H_diff: {H_val}",comm=PETSc.COMM_WORLD)
+        # PETSc.Sys.Print(f"Norm of S_diff: {S_val}",comm=PETSc.COMM_WORLD)
+        # PETSc.Sys.Print(f"Norm of H_diff: {H_val}",comm=PETSc.COMM_WORLD)
         ###############################################################
 
 
@@ -353,8 +353,8 @@ class tdse(simulation.simulation):
         
         self.S = S_total
     
-        S_L.axpy(1j*self.input_params["box"]["time_spacing"]/2,H_test) #TESTING
-        S_R.axpy(-1j*self.input_params["box"]["time_spacing"]/2,H_test)#TESTING
+        S_L.axpy(1j*self.input_params["box"]["time_spacing"]/2,H_total) 
+        S_R.axpy(-1j*self.input_params["box"]["time_spacing"]/2,H_total)
         H_total.destroy()
 
         self.atomic_L = S_L
