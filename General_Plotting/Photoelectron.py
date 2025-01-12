@@ -88,7 +88,7 @@ ky_vals = k_vals * np.sin(theta_vals) * np.sin(phi_vals)
 kz_vals = k_vals * np.cos(theta_vals)
 
 max_val = np.max(np.real(pad_vals))
-min_val = np.max(np.real(pad_vals))*10**-2
+min_val = np.max(np.real(pad_vals))*10**-6
 
 cmap = "hot_r"
 

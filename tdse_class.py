@@ -19,44 +19,7 @@ size = PETSc.COMM_WORLD.size
 class tdse(simulation.simulation):
     def __init__(self,input_file):
         super().__init__(input_file)
-    
-    def readInState(self):
-        block_index = self.input_params["lm"]["lm_to_block"][(self.input_params["state"][1], self.input_params["state"][2])]
-        psi_initial = PETSc.Vec().createMPI(self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],comm = PETSc.COMM_WORLD)
-        
-        with h5py.File(f'TISE_files/{self.input_params["box"]["potential_func"].__name__}.h5', 'r') as f:
-            data = f[f'/Psi_{self.input_params["state"][0]}_{self.input_params["state"][1]}'][:]
-            real_part = data[:,0]
-            imaginary_part = data[:,1]
-            total = real_part + 1j*imaginary_part
-
-        global_indices = np.array(range(self.input_params["splines"]["n_basis"]))+block_index*self.input_params["splines"]["n_basis"]
-        global_indices = global_indices.astype("int32")
-        psi_initial.setValues(global_indices,total)
-        psi_initial.assemble()
-        self.state = psi_initial
-
-        #####################################
-        # TESTING
-        # psi_test = PETSc.Vec().createMPI(self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],comm = PETSc.COMM_WORLD)
-        
-        # with h5py.File(f'../../qprop_circ_sample/TISE_files/{self.input_params["box"]["potential_func"].__name__}.h5', 'r') as f:
-        #     data = f[f'/Psi_{self.input_params["state"][0]}_{self.input_params["state"][1]}'][:]
-        #     real_part = data[:,0]
-        #     imaginary_part = data[:,1]
-        #     total = real_part + 1j*imaginary_part
-
-        # psi_test.setValues(global_indices,total)
-        # psi_test.assemble()
-        
-        # diff = psi_initial.copy()
-        # diff.axpy(-1,psi_test)
-        # diff_val = diff.norm(PETSc.NormType.FROBENIUS)
-        # PETSc.Sys.Print(f"Norm of difference: {diff_val}",comm=PETSc.COMM_WORLD)
-        ###############################################################
-
-
-        return True
+   
 
     def constructInteraction(self,basis):
         self.hamiltonians = [0]*3
@@ -313,41 +276,7 @@ class tdse(simulation.simulation):
         Invr2.destroy()
         V.destroy()
 
-        #####################################
-        # TESTING
-
-        # if os.path.exists('../../qprop_circ_sample/TISE_files/S.bin'):
-        #     S_test = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
-        #     S_viewer = PETSc.Viewer().createBinary('../../qprop_circ_sample/TISE_files/S.bin', 'r')
-        #     S_test.load(S_viewer)
-        #     S_viewer.destroy()
-        #     S_test.assemble()
-
-        # if os.path.exists('../../qprop_circ_sample/TISE_files/H.bin'):
-        #     H_test = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
-        #     H_viewer = PETSc.Viewer().createBinary('../../qprop_circ_sample/TISE_files/H.bin', 'r')
-        #     H_test.load(H_viewer)
-        #     H_viewer.destroy()
-        #     H_test.assemble()
-
-        # S_diff = S_total.copy()
-        # S_diff.axpy(-1,S_test)
-        # H_diff = H_total.copy()
-        # H_diff.axpy(-1,H_test)
-
-        # S_val = S_diff.norm(PETSc.NormType.FROBENIUS)
-        # H_val = H_diff.norm(PETSc.NormType.FROBENIUS)
-
-        # PETSc.Sys.Print(f"Norm of S_diff: {S_val}",comm=PETSc.COMM_WORLD)
-        # PETSc.Sys.Print(f"Norm of H_diff: {H_val}",comm=PETSc.COMM_WORLD)
-        ###############################################################
-
-
-
-
-        
-
-      
+    
         S_L = S_total.copy()
         S_R = S_total.copy()
         
@@ -369,23 +298,33 @@ class tdse(simulation.simulation):
         S_norm.destroy()
         return np.real(prod)
 
-    def computeNormIndices(self,Nt_total):
-        norm_indices = np.linspace(0, Nt_total - 1, num=self.input_params["TDSE"]["norm_checkpoints"], dtype=int)
-        return norm_indices
-
-    def computeCheckpointIndices(self,Nt_total):
-        checkpoint_indices = np.linspace(0, Nt_total - 1, num=self.input_params["TDSE"]["save_checkpoints"], dtype=int)
-        return checkpoint_indices
+    def compute_index_set(self,M):
+        indices = np.linspace(1, self.input_params["box"]["Nt_total"] - 1, num=M, dtype=int)
+        return indices
 
     def loadStartingState(self):
-        if not os.path.exists("TDSE_files/TDSE.h5"):
-            return 0,self.state
+        tise_save = f'TISE_files/{self.input_params["box"]["potential_func"].__name__}.h5'
+        tdse_save = f'TDSE_files/TDSE.h5'
         
-        
+        if os.path.exists(tise_save) and not os.path.exists(tdse_save):
+            block_index = self.input_params["lm"]["lm_to_block"][(self.input_params["state"][1], self.input_params["state"][2])]
+            psi_initial = PETSc.Vec().createMPI(self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],comm = PETSc.COMM_WORLD)
+            
+            with h5py.File(f'TISE_files/{self.input_params["box"]["potential_func"].__name__}.h5', 'r') as f:
+                data = f[f'/Psi_{self.input_params["state"][0]}_{self.input_params["state"][1]}'][:]
+                real_part = data[:,0]
+                imaginary_part = data[:,1]
+                total = real_part + 1j*imaginary_part
+
+            global_indices = np.array(range(self.input_params["splines"]["n_basis"]))+block_index*self.input_params["splines"]["n_basis"]
+            global_indices = global_indices.astype("int32")
+            psi_initial.setValues(global_indices,total)
+            psi_initial.assemble()
+            return 0,psi_initial
+             
         last_checkpoint = -1 
-        if os.path.exists("TDSE_files/TDSE.h5"):
-            with h5py.File("TDSE_files/TDSE.h5", "r") as f:
-                # Look for datasets of the form psi_integer
+        if os.path.exists(tdse_save):
+            with h5py.File(tdse_save, "r") as f:
                 for key in f.keys():
                     if key.startswith("psi_"):
                         try:
@@ -394,11 +333,9 @@ class tdse(simulation.simulation):
                         except ValueError:
                             continue
         
-     
-    
         checkpoint_state = PETSc.Vec().createMPI(self.input_params["splines"]["n_basis"]*self.input_params["lm"]["n_blocks"],comm = PETSc.COMM_WORLD)
         
-        with h5py.File(f'TDSE_files/TDSE.h5', 'r') as f:
+        with h5py.File(tdse_save, 'r') as f:
             data = f[f"/psi_{last_checkpoint}"][:]
             real_part = data[:,0]
             imaginary_part = data[:,1]
@@ -410,12 +347,7 @@ class tdse(simulation.simulation):
         checkpoint_state.assemble()
         return last_checkpoint+1,checkpoint_state
         
-
-        
-
     def propagateState(self,laserInstance):
-
-
         starting_idx,psi_initial = self.loadStartingState()
         current_norm = self.computeNorm(psi_initial)
         if rank == 0:
@@ -424,25 +356,23 @@ class tdse(simulation.simulation):
             norm_file.close()
 
         if starting_idx == 0:
-            # Starting from scratch
             ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.WRITE, comm=PETSc.COMM_WORLD)
         else:
-            # Resuming from a checkpoint
             ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.APPEND, comm=PETSc.COMM_WORLD)
 
        
-        norm_indices = self.computeNormIndices(self.input_params["box"]["Nt_total"] )
-        checkpoint_indices = self.computeCheckpointIndices(self.input_params["box"]["Nt_total"])
+
+        checkpoint_indices = self.compute_index_set(self.input_params["TDSE"]["save_checkpoints"])
+        
+       
 
 
         ksp = PETSc.KSP().create(comm = PETSc.COMM_WORLD)
         ksp.setTolerances(rtol = self.input_params["TDSE"]["tolerance"])
 
-       
-        Nt_total = self.input_params["box"]["Nt_total"]
         for idx in range(starting_idx,self.input_params["box"]["Nt_total"]):
             if rank == 0:
-                print(f"Iteration {idx}/{Nt_total} \n")
+                print(f"Iteration {idx}/{self.input_params['box']['Nt_total']} \n")
 
             partial_L_copy = self.atomic_L.copy()
             partial_R_copy = self.atomic_R.copy()
@@ -473,12 +403,9 @@ class tdse(simulation.simulation):
             ksp.solve(known,solution)
             solution.copy(psi_initial)
 
-            Nt_total = self.input_params["box"]["Nt_total"]
+   
 
-            if idx in []:
-                current_norm = self.computeNorm(psi_initial)
-            if rank == 0 and idx in norm_indices:
-                print(f"Norm of state at step {idx}/{Nt_total}: {current_norm} \n")
+        
             
             if idx in checkpoint_indices:
                 psi_initial.setName(f"psi_{idx}")
@@ -493,12 +420,15 @@ class tdse(simulation.simulation):
 
         if rank == 0:
             print(f"Norm of Final State:{final_norm}")
+            norm_file = open("TDSE_files/norms.txt","a")
+            norm_file.write(f"Norm of Final state: {final_norm} \n")
+            norm_file.close()
 
         ViewHDF5.destroy()
-        ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.WRITE, comm= PETSc.COMM_WORLD)
+        ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.APPEND, comm= PETSc.COMM_WORLD)
         psi_initial.setName("psi_final")
         ViewHDF5.view(psi_initial)
         ViewHDF5.destroy()
-        return None
+        return True
 
 

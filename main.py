@@ -75,7 +75,6 @@ if "TDSE" in sys.argv:
     field = laser.laser(sim)
     field.plotPulse(sim)
     bspline = basis.basis(sim)
-    sim.readInState()
     sim.constructInteraction(bspline)
     sim.constructAtomic()
     sim.propagateState(field)
