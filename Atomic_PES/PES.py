@@ -17,7 +17,6 @@ from scipy.special import sph_harm
 from scipy.integrate import simpson
 from scipy.sparse import csr_matrix
 
-sys.path.append('/users/becker/dopl4670/Research/Atomic_Schrodinger/Common')
 import utility
 
 from petsc4py import PETSc
@@ -100,17 +99,17 @@ class PES:
         n_basis = self.parameters["splines"]["n_basis"]
         order = self.parameters["splines"]["order"]
          
-        S = PETSc.Mat().createAIJ([self.parameters["total_size"], self.parameters["total_size"]], nnz=(2 * (order - 1) + 1), comm=PETSc.COMM_SELF)
+        S = PETSc.Mat().createAIJ(n_basis ,n_basis, nnz=(2 * (order - 1) + 1), comm=PETSc.COMM_SELF)
         viewer = PETSc.Viewer().createBinary('TISE_files/S.bin', 'r')
         S.load(viewer)
         viewer.destroy()
 
-        from scipy.sparse import csr_matrix
+        
         Si, Sj, Sv = S.getValuesCSR()
         S.destroy()
         S_array = csr_matrix((Sv, Sj, Si))
-        self.S_R= S_array[:n_basis, :n_basis]
-        S.destroy()
+        self.S_R = S_array
+      
 
     def project_out_bound_states(self):
         """
