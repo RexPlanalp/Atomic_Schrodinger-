@@ -41,6 +41,11 @@ class laser:
             plt.legend()
             plt.savefig("images/laser.png")
             plt.close()  # Close the figure to ensure it doesn't interfere with subsequent plots
+
+            if sim.input_params["laser"]["components"][0] and sim.input_params["laser"]["components"][1]:
+                plt.plot(self.Ax(t_total,sim),self.Ay(t_total,sim))
+                plt.savefig("images/laser_xy.png")
+                plt.clf()
         return True
 
             
