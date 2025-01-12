@@ -122,19 +122,19 @@ class simulation:
     def _components_ellipticity(self):
         polarization = self.input_params["laser"]["polarization"]
         polarization /= np.linalg.norm(polarization)
+        self.input_params["laser"]["polarization"] = polarization
 
         poynting = self.input_params["laser"]["poynting"]
         poynting /= np.linalg.norm(poynting)
+        self.input_params["laser"]["poynting"] = poynting
 
         ellipticity = np.cross(polarization, poynting) 
         ellipticity /= np.linalg.norm(ellipticity)
-
-        ell = self.input_params["laser"]["ell"]
-
-        components = np.array([(1 if polarization[i] != 0 or ell * ellipticity[i] != 0 else 0) for i in range(3)])
-
-        self.input_params["laser"]["components"] = components
         self.input_params["laser"]["ellipticity"]= ellipticity
+
+        components = np.array([(1 if polarization[i] != 0 or self.input_params["laser"]["ell"] * ellipticity[i] != 0 else 0) for i in range(3)])
+        self.input_params["laser"]["components"] = components
+        
 
         return True
 
@@ -195,10 +195,7 @@ class simulation:
         self.input_params["box"]["Nt_total"] = Nt+Nt_post
         self.input_params["box"]["Nt"] = Nt
         self.input_params["box"]["Nt_post"] = Nt_post
-
-        t = np.linspace(0, time_size, Nt)
-        t_post = np.linspace(0, post_time_size, Nt_post)
-
+        
         self.input_params["box"]["time_size"] = time_size
         self.input_params["box"]["t_range"] = np.array([0,time_size,Nt])
         self.input_params["box"]["t_post_range"] = np.array([time_size+self.input_params["box"]["time_spacing"],time_size+post_time_size,Nt_post])

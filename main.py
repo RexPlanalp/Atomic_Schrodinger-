@@ -25,11 +25,11 @@ if "TISE" in sys.argv:
     start = time.time()
     if rank == 0:
         if not os.path.exists("TISE_files"):
-            os.mkdir("TISE_files")
+            os.system("mkdir TISE_files")
         if not os.path.exists("images"):
-            os.mkdir("images")
+            os.system("mkdir images")
         if not os.path.exists("temp"):
-            os.mkdir("temp")
+            os.system("mkdir temp")
     end = time.time()
     petsc4py.PETSc.Sys.Print("Time to create directories: ", end-start)
 
@@ -61,27 +61,26 @@ if "TISE" in sys.argv:
     petsc4py.PETSc.Sys.Print("Total time: ", total_end-total_start)
     petsc4py.PETSc.Sys.Print("Cleaning up...")
     if rank == 0:
-        os.rmdir("temp")
+        os.system("rm -rf temp")
 
 PETSc.COMM_WORLD.barrier()
 
 if "TDSE" in sys.argv:
     if rank == 0:
         if not os.path.exists("TDSE_files"):
-            os.mkdir("TDSE_files")
+            os.system("mkdir TDSE_files")
         if not os.path.exists("temp"):
-            os.mkdir("temp")
+            os.system("mkdir temp")
     sim = tdse.tdse(input_file)
     field = laser.laser(sim)
     field.plotPulse(sim)
     bspline = basis.basis(sim)
     sim.readInState()
     sim.constructInteraction(bspline)
-    #sim.constructHHG(bspline)
     sim.constructAtomic()
     sim.propagateState(field)
     if rank == 0:
-        os.rmdir("temp")
+        os.system("rm -rf temp")
    
 
 # elif sys.argv[1] == "PES":
