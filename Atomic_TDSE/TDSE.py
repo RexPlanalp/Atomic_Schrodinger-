@@ -573,6 +573,9 @@ class Tdse:
 
             if idx < Nt:
                 if components[0] or components[1]:
+                    test_x = laserInstance.Ax_func(t+dt/2)
+                    test_y = laserInstance.Ay_func(t+dt/2)
+                    print(test_x,test_y)
                     A_tilde = (laserInstance.Ax_func(t+dt/2) + 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
                     A_tilde_star = (laserInstance.Ax_func(t+dt/2) - 1j*laserInstance.Ay_func(t+dt/2))* 1j*dt/2
                     
