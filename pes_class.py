@@ -240,11 +240,11 @@ class pes(simulation.simulation):
 
         k_range = np.sqrt(2 * self.E_range)
 
-        if self.parameters["SLICE"] == "XZ":
+        if self.input_params["SLICE"] == "XZ":
             theta_range = np.arange(0, np.pi, 0.01)
             phi_range = np.array([0, np.pi])
 
-        elif self.parameters["SLICE"] == "XY":
+        elif self.input_params["SLICE"] == "XY":
             theta_range = np.array([np.pi / 2])
             phi_range = np.arange(0, 2 * np.pi, 0.01)
 
