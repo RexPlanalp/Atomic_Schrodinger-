@@ -18,9 +18,9 @@ LOG_PES = "LOG" == sys.argv[1]
 LOG_PAD = "LOG" == sys.argv[2]
 
 PEAKS  = "PEAKS" in sys.argv
-w = input_data["lasers"]["w"]
+w = input_data["laser"]["w"]
 dE = input_data["E"][0]
-I = input_data["lasers"]["I"] / 3.51E16
+I = input_data["laser"]["I"] / 3.51E16
 Up_max = I/(4*w**2)
 
 def findPeakIndices(PES,dE,w):

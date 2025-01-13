@@ -11,7 +11,7 @@
 #SBATCH --exclude=node41
 #SBATCH --exclude=node48
 
-REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger"
+REPO_DIR="/users/becker/dopl4670/Research/Atomic_Schrodinger/src"
                                                                
 hostname
 pwd
