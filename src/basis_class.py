@@ -1,81 +1,50 @@
 import numpy as np
+import time as time
+
 from scipy.special import roots_legendre
 
 from petsc4py import PETSc
-comm = PETSc.COMM_WORLD
-rank = comm.rank
+from slepc4py import SLEPc
 
-import time
 
+rank = PETSc.COMM_WORLD.rank
+size = PETSc.COMM_WORLD.size
 
 class basis:
-    def __init__(self,TISEInstance):
-        self._createKnots(TISEInstance)
+    def __init__(self,sim):
+        self._knot_map = {
+            "linear": self._linearKnots,
+            "quadratic": self._quadraticKnots,
+            "linear+linear": self._linlinKnots
+        }
+        self._createKnots(sim)
 
-    def _linearKnots(self,TISEInstance):
-        n_basis = TISEInstance["splines"]["n_basis"]
-        order = TISEInstance["splines"]["order"]
-        rmax = TISEInstance["box"]["grid_size"]
+    def _linearKnots(self,sim):
+        N_knots = sim.input_params["splines"]["n_basis"] + sim.input_params["splines"]["order"]
+        N_middle = N_knots - 2 * (sim.input_params["splines"]["order"] - 2)
+        knots_middle = np.linspace(0, sim.input_params["box"]["grid_size"], N_middle)
+        knots_middle[-1] = sim.input_params["box"]["grid_size"]
 
-
-        N_knots = n_basis + order
-        N_middle = N_knots - 2 * (order - 2)
-        knots_middle = np.linspace(0, rmax, N_middle)
-        knots_middle[-1] = rmax  
-
-        knots_start = [0] * (order - 2)
-        knots_end = [rmax] * (order - 2)
+        knots_start = [0] * (sim.input_params["splines"]["order"] - 2)
+        knots_end = [sim.input_params["box"]["grid_size"]] * (sim.input_params["splines"]["order"] - 2)
 
         return np.array(knots_start + knots_middle.tolist() + knots_end)
 
-    def _quadraticKnots(self,TISEInstance):
-        n_basis = TISEInstance["splines"]["n_basis"]
-        order = TISEInstance["splines"]["order"]
-        rmax = TISEInstance["box"]["grid_size"]
-
-        N_knots = n_basis + order 
-        N_middle = N_knots - 2 * (order-2)
+    def _quadraticKnots(self,sim):
+        N_knots = sim.input_params["splines"]["n_basis"] + sim.input_params["splines"]["order"]
+        N_middle = N_knots - 2 * (sim.input_params["splines"]["order"]-2)
         
         indices = np.linspace(0, 1, N_middle)
-        knots_middle = rmax * indices**1.2
+        knots_middle = sim.input_params["box"]["grid_size"] * indices**1.2
         
-        knots_start = [0] * (order-2)
-        knots_end = [rmax] * (order-2)
+        knots_start = [0] * (sim.input_params["splines"]["order"]-2)
+        knots_end = [sim.input_params["box"]["grid_size"]] * (sim.input_params["splines"]["order"]-2)
         
         return np.array(knots_start + knots_middle.tolist() + knots_end)
 
-    def _piecewisequadpluslinKnots(self,TISEInstance):
-        n_basis = TISEInstance["splines"]["n_basis"]
-        order = TISEInstance["splines"]["order"]
-        rmax = TISEInstance["box"]["grid_size"]
-
-        N_knots = n_basis + order 
-        N_middle = N_knots - 2 * (order-2)
-        
-
-        N_core = 100
-        N_outer = N_middle - N_core
-
-        core = 200
-
-        core_knots = core*np.linspace(0,1,N_core)**2
-        outer_knots = core + np.linspace(0,1,N_outer)*(rmax-core)
-
-        knots_middle = core_knots.tolist() + outer_knots.tolist()
-
-        knots_start = [0] * (order-2)
-        knots_end = [rmax] * (order-2)
-
-        return np.array(knots_start + knots_middle + knots_end)
-    
-    def _linlinKnots(self,TISEInstance):
-        n_basis = TISEInstance["splines"]["n_basis"]
-        order = TISEInstance["splines"]["order"]
-        rmax = TISEInstance["box"]["grid_size"]
-
-
-        N_knots = n_basis + order 
-        N_middle = N_knots - 2 * (order-2)
+    def _linlinKnots(self,sim):
+        N_knots = sim.input_params["splines"]["n_basis"] + sim.input_params["splines"]["order"]
+        N_middle = N_knots - 2 * (sim.input_params["splines"]["order"]-2)
             
         N_core = 700
         N_outer = N_middle - N_core
@@ -83,33 +52,25 @@ class basis:
         core = 150
 
         core_knots = core*np.linspace(0,1,N_core)
-        outer_knots = core + np.linspace(0,1,N_outer)*(rmax-core)
+        outer_knots = core + np.linspace(0,1,N_outer)*(sim.input_params["box"]["grid_size"]-core)
 
         knots_middle = core_knots.tolist() + outer_knots.tolist()
 
-        knots_start = [0] * (order-2)
-        knots_end = [rmax] * (order-2)
+        knots_start = [0] * (sim.input_params["splines"]["order"]-2)
+        knots_end = [sim.input_params["box"]["grid_size"]] * (sim.input_params["splines"]["order"]-2)
 
         return np.array(knots_start + knots_middle + knots_end)
     
-    def _createKnots(self,TISEInstance):
-        R0_input = TISEInstance["box"]["R0"]
+    def _createKnots(self,sim):
+        R0_input = sim.input_params["box"]["R0"]
+        self.eta = sim.input_params["box"]["eta"]
         
-        
-        if TISEInstance["splines"]["knot_spacing"] == "linear":
-            self.knots = self._linearKnots(TISEInstance)
-        elif TISEInstance["splines"]["knot_spacing"] == "quadratic":
-            self.knots = self._quadraticKnots(TISEInstance)
-        elif TISEInstance["splines"]["knot_spacing"] == "quadratic+linear":
-            self.knots = self._piecewisequadpluslinKnots(TISEInstance)
-        elif TISEInstance["splines"]["knot_spacing"] == "linear+linear":
-            self.knots = self._linlinKnots(TISEInstance)
+        self.knots = self._knot_map[sim.input_params["splines"]["knot_spacing"]](sim)
         
         self.R0_index = np.argmin(np.abs(self.knots-R0_input))
         self.R0 = self.knots[self.R0_index]
 
-    
-        self.eta = TISEInstance["box"]["eta"]
+        return True
         
     def integrate(self, func, i_fixed, j_fixed,order,knots):
         start = min(i_fixed, j_fixed)
@@ -118,7 +79,7 @@ class basis:
         a = knots[start:end]
         b = knots[start + 1:end + 1]
 
-        x, w = roots_legendre(8) 
+        x, w = roots_legendre(order+1) 
         
         x = x.reshape(1, -1)
         y = np.outer(b - a, (x + 1) / 2) + a[:, np.newaxis]
