@@ -18,7 +18,7 @@ pwd
 
 
 
-mpiexec -n $SLURM_NTASKS python $REPO_DIR/pes_main.py >> results.log
+mpiexec -n $SLURM_NTASKS python $REPO_DIR/observable_main.py $1 $1 $3 >> results.log
 
 
 
