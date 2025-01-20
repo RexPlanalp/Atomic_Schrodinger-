@@ -121,15 +121,21 @@ class simulation:
 
     def _components_ellipticity(self):
         polarization = self.input_params["laser"]["polarization"]
-        polarization /= np.linalg.norm(polarization)
+        polarization_norm = np.linalg.norm(polarization)
+        if polarization_norm != 0:
+            polarization /= np.linalg.norm(polarization)
         self.input_params["laser"]["polarization"] = polarization
 
         poynting = self.input_params["laser"]["poynting"]
-        poynting /= np.linalg.norm(poynting)
+        poynting_norm = np.linalg.norm(poynting)
+        if poynting_norm != 0:
+            poynting /= poynting_norm
         self.input_params["laser"]["poynting"] = poynting
 
         ellipticity = np.cross(polarization, poynting) 
-        ellipticity /= np.linalg.norm(ellipticity)
+        ellipticity_norm = np.linalg.norm(ellipticity)
+        if ellipticity_norm != 0:
+            ellipticity /= ellipticity_norm
         self.input_params["laser"]["ellipticity"]= ellipticity
 
         components = np.array([(1 if polarization[i] != 0 or self.input_params["laser"]["ell"] * ellipticity[i] != 0 else 0) for i in range(3)])
