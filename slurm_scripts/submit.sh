@@ -2,8 +2,8 @@
 #SBATCH --job-name simulation
 #SBATCH -p jila
 #SBATCH --nodes 1
-#SBATCH --ntasks 24
-#SBATCH --mem=16G
+#SBATCH --ntasks 32
+#SBATCH --mem=32G
 #SBATCH -o run.log 
 #SBATCH -t 1-00:00:00
 
