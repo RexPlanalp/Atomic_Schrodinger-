@@ -9,10 +9,10 @@ file_path = "input.json"
 with open(file_path, 'r') as file:
     input_data = json.load(file)
 
-polarization = input_data["lasers"]["polarization"]
+polarization = input_data["laser"]["polarization"]
 
-I_max = input_data["lasers"]["I"]/3.51E16
-w = input_data["lasers"]["w"]
+I_max = input_data["laser"]["I"]/3.51E16
+w = input_data["laser"]["w"]
 N = input_data["box"]["N"]
 
 if input_data["species"] == "H":
@@ -28,7 +28,7 @@ cut_off = 3.17*Up - Ip
 # Load data
 HHG_data = np.real(np.load("TDSE_files/HHG_data.npy"))      # Shape: (3, N)
 laser_data = np.real(np.load("TDSE_files/laser_data.npy"))  # Shape: (3, N)
-total_time = np.real(np.load("TDSE_files/t_total.npy"))     # Shape: (N,)
+total_time = np.real(np.load("TDSE_files/time.npy"))     # Shape: (N,)
 
 # Initialize dipole_acceleration as a 2D array to store each component
 dipole_acceleration = np.zeros((3, len(total_time)))
@@ -69,7 +69,7 @@ total_power_spectrum = total_power_spectrum[positive_freq_idx]
 
 # Plot the total harmonic spectrum
 plt.figure(figsize=(8, 6))
-plt.semilogy(frequencies * N / w, total_power_spectrum, color='b')
+plt.semilogy(frequencies * 2*np.pi / w, total_power_spectrum, color='b')
 plt.axvline(cut_off/w, color='r', linestyle='--', label='Cut-off Energy')
 plt.xlim([0, 60])        # Adjust based on your data's frequency range
 plt.ylim([1e-4, 1e4])     # Adjust based on the power spectrum's range
@@ -81,3 +81,4 @@ plt.savefig("images/harmonic_spectrum.png")
 plt.clf()
 
 print("Dipole acceleration components and harmonic spectrum have been successfully processed and saved.")
+

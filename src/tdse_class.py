@@ -195,8 +195,6 @@ class tdse(simulation.simulation):
             self.hamiltonians[2] = H_Z_1
 
     def constructAtomic(self):
-        
-
         if os.path.exists('TISE_files/K.bin'):
             K = PETSc.Mat().createAIJ([self.input_params["splines"]["n_basis"],self.input_params["splines"]["n_basis"]],comm = PETSc.COMM_WORLD,nnz = 2*(self.input_params["splines"]["order"]-1)+1)
             K_viewer = PETSc.Viewer().createBinary('TISE_files/K.bin', 'r')
@@ -291,6 +289,149 @@ class tdse(simulation.simulation):
 
         return None
 
+    def constructHHG(self,basis):
+        if not self.input_params["HHG"]:
+            return None
+        self.hhgs = [0]*3
+
+        n_blocks = self.input_params["lm"]["n_blocks"]
+        n_basis = self.input_params["splines"]["n_basis"]
+        order = self.input_params["splines"]["order"]
+        components = self.input_params["laser"]["components"]
+
+
+
+        if self.input_params["species"] == "H":
+            def _H_inv_2_R_element(x,i,j,knots,order):
+                return (basis.B(i, order, x, knots)*basis.B(j, order, x, knots)/(x**2+1E-25))
+        elif self.input_params["species"] == "Ar":
+            def dAr(x):
+                a = 1e-25  # Small constant to avoid division by zero
+                
+                # Term 1: Derivative of -1/(x + a)
+                term1 = 1.0 / (x**2 + a)
+                
+                # Term 2: Derivative of -17 * exp(-0.8103x) / (x + a)
+                term2 = 17.0 * 0.8103 * np.exp(-0.8103 * x) / (x + a)
+                term3 = 17.0 * np.exp(-0.8103 * x) / (x**2 + a)
+                
+                # Term 3: Derivative of 15.9583 * exp(-1.2305x)
+                term4 = -15.9583 * 1.2305 * np.exp(-1.2305 * x)
+                
+                # Term 4: Derivative of 27.7467 * exp(-4.3946x)
+                term5 = -27.7467 * 4.3946 * np.exp(-4.3946 * x)
+                
+                # Term 5: Derivative of -2.1768 * exp(-86.7179x)
+                term6 = 2.1768 * 86.7179 * np.exp(-86.7179 * x)
+                
+                # Sum all terms to get the derivative
+                return term1 + term2 + term3 + term4 + term5 + term6
+            def _H_inv_2_R_element(x,i,j,knots,order):
+                return (basis.B(i, order, x, knots)*basis.B(j, order, x, knots)*dAr(x))
+        
+        H_inv_2_R = PETSc.Mat().createAIJ([n_basis,n_basis],comm = PETSc.COMM_WORLD,nnz = 2*(order-1)+1)
+        istart,iend = H_inv_2_R.getOwnershipRange()
+        for i in range(istart,iend):
+            for j in range(n_basis):
+                if np.abs(i-j)>=order:
+                    continue
+                H_element = basis.integrate(_H_inv_2_R_element,i,j,order,basis.knots)
+                H_inv_2_R.setValue(i,j,H_element)
+        PETSc.COMM_WORLD.barrier()
+        H_inv_2_R.assemble()
+
+        def alpha(l,m):
+            f1 = np.sqrt(((l+m-1)*(l+m))/(2*(2*l+1)*(2*l-1)))
+            return f1/np.sqrt(2)
+        def beta(l,m):
+            f1 = np.sqrt(((l-m+1)*(l-m+2)*(l+1))/((2*l +1)*(2*l + 2)*(2*l+3)))
+            return -f1/np.sqrt(2)
+        
+        def charlie(l,m):
+            f1 = np.sqrt(((l-m-1)*(l-m))/(2*(2*l+1)*(2*l-1)))
+            return f1/np.sqrt(2)
+        def delta(l,m):
+            f1 = np.sqrt(((l+m+1)*(l+m+2)*(l+1))/((2*l +1)*(2*l + 2)*(2*l+3)))
+            return -f1/np.sqrt(2)
+        
+        def echo(l,m):
+            f1 = np.sqrt(((l+m)*(l-m))/((2*l -1)*(2*l+1)))
+            return f1
+
+        def foxtrot(l,m):
+            f1 = np.sqrt(((l+m+1)*(l-m+1))/((2*l +1)*(2*l + 3)))
+            return f1
+        
+        if components[0]:
+            HHG_x_lm = PETSc.Mat().createAIJ([n_blocks,n_blocks],comm = PETSc.COMM_WORLD,nnz = 4)
+            istart,iend = HHG_x_lm.getOwnershipRange()
+            for i in range(istart,iend):
+                l,m = self.input_params["lm"]["block_to_lm"][i]
+                for j in range(n_blocks):
+                    lprime,mprime = self.input_params["lm"]["block_to_lm"][j]
+
+                    # Corresponds to <1,-1>
+                    if (l == lprime+1) and (m == mprime-1):
+                        HHG_x_lm.setValue(i,j,charlie(l,m))
+                    elif (l == lprime-1) and (m == mprime-1):
+                        HHG_x_lm.setValue(i,j,delta(l,m))
+
+                    # Corresponds to -<1,1>
+                    elif (l == lprime+1) and (m == mprime+1):
+                        HHG_x_lm.setValue(i,j,-alpha(l,m))
+                    elif (l == lprime-1) and (m == mprime+1):
+                        HHG_x_lm.setValue(i,j,-beta(l,m))
+            PETSc.COMM_WORLD.barrier()
+            HHG_x_lm.assemble()
+
+            HHG_x = self.kron(HHG_x_lm,H_inv_2_R,PETSc.COMM_WORLD,4*(2*(order-1) + 1))
+            self.hhgs[0] = HHG_x
+
+        if components[1]:
+            HHG_y_lm = PETSc.Mat().createAIJ([n_blocks,n_blocks],comm = PETSc.COMM_WORLD,nnz = 4)
+            istart,iend = HHG_y_lm.getOwnershipRange()
+            for i in range(istart,iend):
+                l,m = self.input_params["lm"]["block_to_lm"][j]
+                for j in range(n_blocks):
+                    lprime,mprime = self.input_params["lm"]["block_to_lm"][j]
+
+                    # Corresponds to <1,-1>
+                    if (l == lprime+1) and (m == mprime-1):
+                        HHG_y_lm.setValue(i,j,charlie(l,m))
+                    elif (l == lprime-1) and (m == mprime-1):
+                        HHG_y_lm.setValue(i,j,delta(l,m))
+
+                    # Corresponds to <1,1>
+                    elif (l == lprime+1) and (m == mprime+1):
+                        HHG_y_lm.setValue(i,j,alpha(l,m))
+                    elif (l == lprime-1) and (m == mprime+1):
+                        HHG_y_lm.setValue(i,j,beta(l,m))
+            PETSc.COMM_WORLD.barrier()
+            HHG_y_lm.assemble()
+
+            HHG_y = self.kron(HHG_y_lm,H_inv_2_R,PETSc.COMM_WORLD,4*(2*(order-1) + 1))
+            self.hhgs[1] = HHG_y
+                    
+        if components[2]:
+            HHG_z_lm = PETSc.Mat().createAIJ([n_blocks,n_blocks],comm = PETSc.COMM_WORLD,nnz = 2)
+            istart,iend = HHG_z_lm.getOwnershipRange()
+            for i in range(istart,iend):
+                l,m = self.input_params["lm"]["block_to_lm"][i]
+                for j in range(n_blocks):
+                    lprime,mprime = self.input_params["lm"]["block_to_lm"][j]
+
+                    if (l == lprime+1) and (m == mprime):
+                        HHG_z_lm.setValue(i,j,echo(l,m))
+                    elif (l == lprime-1) and (m == mprime):
+                        HHG_z_lm.setValue(i,j,foxtrot(l,m))
+
+                    
+            PETSc.COMM_WORLD.barrier()
+            HHG_z_lm.assemble()
+
+            HHG_z = self.kron(HHG_z_lm,H_inv_2_R,PETSc.COMM_WORLD,2*(2*(order-1) + 1))
+            self.hhgs[2] = HHG_z
+
     def computeNorm(self,state):
         S_norm = self.S.createVecRight()
         self.S.mult(state,S_norm)
@@ -370,9 +511,45 @@ class tdse(simulation.simulation):
         ksp = PETSc.KSP().create(comm = PETSc.COMM_WORLD)
         ksp.setTolerances(rtol = self.input_params["TDSE"]["tolerance"])
 
+
+
+
+        if self.input_params["HHG"]:
+            HHG_data = np.zeros((3,self.input_params["box"]["Nt_total"]),dtype = np.complex128)
+            laser_data = np.zeros((3,self.input_params["box"]["Nt_total"]),dtype = np.complex128)
+        
+        time_list = []
+
         for idx in range(starting_idx,self.input_params["box"]["Nt_total"]):
             if rank == 0:
                 print(f"Iteration {idx}/{self.input_params['box']['Nt_total']} \n")
+            t = idx * self.input_params["box"]["time_spacing"]
+            time_list.append(t)
+
+            if self.input_params["HHG"]:
+                if self.input_params["laser"]["components"][0]:
+                    temp = self.hhgs[0].createVecRight()
+                    self.hhgs[0].mult(psi_initial, temp)
+                    prodx = psi_initial.dot(temp)
+                    temp.destroy()
+                    HHG_data[0,idx] = prodx
+                    laser_data[0,idx] = laserInstance.Ax(t,self)
+                if self.input_params["laser"]["components"][1]:
+                    temp = self.hhgs[1].createVecRight()
+                    self.hhgs[1].mult(psi_initial, temp)
+                    prody = psi_initial.dot(temp)
+                    temp.destroy()
+                    HHG_data[1,idx] = prody
+                    laser_data[1,idx] = laserInstance.Ay(t,self)
+                if  self.input_params["laser"]["components"][2]:
+                    temp = self.hhgs[2].createVecRight()
+                    self.hhgs[2].mult(psi_initial, temp)
+                    prodz = psi_initial.dot(temp)
+                    temp.destroy()
+                    HHG_data[2,idx] = prodz
+                    laser_data[2,idx] = laserInstance.Az(t,self)
+                
+
 
             partial_L_copy = self.atomic_L.copy()
             partial_R_copy = self.atomic_R.copy()
@@ -380,7 +557,7 @@ class tdse(simulation.simulation):
             known = partial_R_copy.createVecRight() 
             solution = partial_L_copy.createVecRight()
 
-            t = idx * self.input_params["box"]["time_spacing"]
+           
 
             if idx < self.input_params["box"]["Nt"]:
                 if self.input_params["laser"]["components"][0] or self.input_params["laser"]["components"][1]:
@@ -423,6 +600,14 @@ class tdse(simulation.simulation):
             norm_file = open("TDSE_files/norms.txt","a")
             norm_file.write(f"Norm of Final state: {final_norm} \n")
             norm_file.close()
+
+            np.save("TDSE_files/time.npy",time_list)
+        
+        if self.input_params["HHG"]:
+            np.save("TDSE_files/HHG_data.npy",HHG_data)
+            np.save("TDSE_files/laser_data.npy",laser_data)
+        
+
 
         ViewHDF5.destroy()
         ViewHDF5 = PETSc.Viewer().createHDF5("TDSE_files/TDSE.h5", mode=PETSc.Viewer.Mode.APPEND, comm= PETSc.COMM_WORLD)

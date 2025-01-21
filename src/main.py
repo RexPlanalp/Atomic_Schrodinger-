@@ -77,6 +77,7 @@ if "TDSE" in sys.argv:
     bspline = basis.basis(sim)
     sim.constructInteraction(bspline)
     sim.constructAtomic()
+    sim.constructHHG(bspline)
     sim.propagateState(field)
     if rank == 0:
         os.system("rm -rf temp")
